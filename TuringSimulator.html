@@ -1,0 +1,326 @@
+<html>
+  <head>
+    <title>Turing-Maschine</title>
+    <style>
+      body {
+        color:darkblue;
+        text-align: justify;
+        font-family: sans-serif;
+        font-size: 13px;
+      }
+      em {
+        font-weight:bold;
+        font-style:normal;
+      }
+      span.tip {
+        text-size:small;
+        color:grey;
+      }
+      
+      a.tabButton {
+        padding:5px;
+        padding-bottom:0px;
+        border:1px solid black;
+        color:darkblue;
+        text-decoration:none;
+      }
+      
+      div.tab {
+        padding:5px;
+      }
+      
+      table.transitions {
+        border-collapse:collapse
+      }
+      th {
+        font-weight:normal;
+        font-size:small;
+      }
+    </style>
+    <script>
+addEventListener("load", initialize, false);
+
+var tape_canvas, tape_ccontext, machine
+function initialize() {
+  tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
+  tape_canvas = tape_ccontext.canvas;
+  tape_ccontext.save();
+  
+  compile();
+}
+
+function openDescription() {
+  document.getElementById('description').style.display = 'block'
+  document.getElementById('simulation').style.display = 'none'
+  document.getElementById('test').style.display = 'none'
+  
+  document.getElementById('description_button').style.backgroundColor = 'lightblue'
+  document.getElementById('simulation_button').style.backgroundColor = 'white'
+  document.getElementById('test_button').style.backgroundColor = 'white'
+}
+function openSimulation() {
+  document.getElementById('description').style.display = 'none'
+  document.getElementById('simulation').style.display = 'block'
+  document.getElementById('test').style.display = 'none'
+  
+  document.getElementById('description_button').style.backgroundColor = 'white'
+  document.getElementById('simulation_button').style.backgroundColor = 'lightblue'
+  document.getElementById('test_button').style.backgroundColor = 'white'
+}
+function openTest() {
+  document.getElementById('description').style.display = 'none'
+  document.getElementById('simulation').style.display = 'none'
+  document.getElementById('test').style.display = 'block'
+  
+  document.getElementById('description_button').style.backgroundColor = 'white'
+  document.getElementById('simulation_button').style.backgroundColor = 'white'
+  document.getElementById('test_button').style.backgroundColor = 'lightblue'
+}
+
+function descrChanged() {
+  if (document.getElementById('autocompl_determinism').checked) {
+    document.getElementById('autocompl_number').disabled = false
+    document.getElementById('autocompl_tip').style.display = 'inline'
+  }
+  else {
+    document.getElementById('autocompl_number').disabled = true
+    document.getElementById('autocompl_tip').style.display = 'none'
+  }
+  
+  if (document.getElementById('componthefly').checked)
+    compile();
+}
+function compile() {
+  machine = {}
+  var match
+  
+  machine.properties = []
+  if (document.getElementById('offline').checked) machine.properties.push('offline')
+  if (document.getElementById('type_calculator').checked) machine.properties.push('calculator')
+  if (document.getElementById('type_decision_maker').checked) machine.properties.push('decision maker')
+  if (document.getElementById('type_acceptor').checked) machine.properties.push('acceptor')
+  
+  match = /\s*(\d+)\s/.exec(document.getElementById('tape_count').value+' ')
+  machine.tape_count = match? parseInt(match[1], 10) || 1 : 1
+  
+  match = /\s*(\w+)\s/.exec(document.getElementById('initial_state').value+' ')
+  machine.initial_state = match? match[1] || 'q1' : 'q1'
+  
+  match = /\s*(\w)/.exec(document.getElementById('blank_symbol').value)
+  machine.blank_symbol = match? match[1] || '_' : '_'
+  
+  match = /\s*(\w+)/.exec(document.getElementById('final_state').value)
+  machine.final_state = match? match[1] || 'qf' : 'qf'
+  
+  // parse transitions
+  var errors = document.getElementById('compiler_errors')
+    , transitions = document.getElementById('transitions').value.split('\n')
+  errors.innerHTML = ''
+  machine.transitions = []
+  for (var i = 0; i < transitions.length; i++) {
+    if (transitions[i].replace(/^\s+/, '').replace(/\s+$/, '').length == 0) continue;
+    var regexpstr = '\\s*\\(\\s*(\\w+)\\s*'
+    for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*(\\w)\\s*'
+    regexpstr += '\\)\\s*\\->\\s*\\(\\s*(\\w+)\\s*'
+    for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*(\\w)\\s*'
+    for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*([RLN])\\s*'
+    regexpstr += '\\)'
+    var groups = new RegExp(regexpstr).exec(transitions[i])
+    if (groups) {
+      var trans = {
+        origin: groups[1],
+        read: [],
+        dest: groups[2+machine.tape_count],
+        write: [],
+        move: []
+      }
+      for (var j = 2; j < 2+machine.tape_count; j++) trans.read.push(groups[j])
+      for (var j = 3+machine.tape_count; j < 3+2*machine.tape_count; j++) trans.write.push(groups[j])
+      for (var j = 3+2*machine.tape_count; j < 3+3*machine.tape_count; j++) trans.move.push(groups[j])
+      
+      if (machine.properties.indexOf('offline') != -1
+       && trans.move[0] != 'R') {
+        errors.innerHTML += 'Transition '+(i+1)+' has to move R on the first band: '+transitions[i]+'\n'
+      }
+      
+      machine.transitions.push(trans)
+    } else {
+      errors.innerHTML += 'Transition '+(i+1)+' not valid: '+transitions[i]+'\n'
+    }
+  }
+  document.getElementById('machine_json').innerHTML = JSON.stringify(machine)
+  
+  machine.alphabet = extractMachineAlphabet();
+  updateTMview();
+}
+function updateTMview() {
+  var t, html = '<em>Turing machine:</em><br>'
+      + 'Properties: <em>'+setToString(machine.properties)+'</em><br>\n'
+      + 'Number of tapes: <em>'+machine.tape_count+'</em><br>\n'
+      + 'Initial state: <em>'+machine.initial_state+'</em><br>\n'
+      + 'Blank Symbol: <em>'+machine.blank_symbol+'</em><br>\n'
+      + 'Final state: <em>'+machine.final_state+'</em><br>\n'
+      + 'Tape alphabet: <em>'+setToString(machine.alphabet)+'</em><br>\n'
+      + '<table border="1" class="transitions" style="margin-top:5px"><tr><th>#</th><th></th><th>origin</th>'
+  for (var i = 0; i < machine.tape_count; i++) html += '<th>read '+(i+1)+'</th>'
+  html += '<th></th><th>dest</th>'
+  for (var i = 0; i < machine.tape_count; i++) html += '<th>write '+(i+1)+'</th>'
+  for (var i = 0; i < machine.tape_count; i++) html += '<th>move '+(i+1)+'</th>'
+  html += '</tr>\n'
+  for (var i = 0; i < machine.transitions.length; i++) {
+    t = machine.transitions[i]
+    html += '<tr><td>'+i+'</td><td></td><td>'+t.origin+'</td>'
+    t.read.forEach(function (val){html+= '<td>'+val+'</td>'})
+    html += '<td></td><td>'+t.dest+'</td>'
+    t.write.forEach(function (val){html+= '<td>'+val+'</td>'})
+    t.move.forEach(function (val){html+= '<td>'+val+'</td>'})
+    html += '</tr>\n'
+  }
+  html += '</table>\n'
+  document.getElementById('machine').innerHTML = html;
+}
+function setToString(array) {
+  var out = '{'
+  array.forEach(function (val) {out += val+', '})
+  return out.substring(0, out.length-2) + '}'
+}
+/* Returns the tape alphabet as an array.
+ */
+function extractMachineAlphabet() {
+  var alphabet = [];
+  machine.transitions.forEach(function (val) {
+    for (var i = 0; i < machine.tape_count; i++) {
+      if (alphabet.indexOf(val.read[i]) == -1) alphabet.push(val.read[i]);
+      if (alphabet.indexOf(val.write[i]) == -1) alphabet.push(val.write[i]);
+    }
+  });
+  return alphabet.sort();
+}
+
+function moveTape(pos1, pos2, time_ms, callback, pospx) {
+  var BOX_SIZE = +document.getElementById('tape_size_slider').value
+    , pos1px = -BOX_SIZE / 2 - (+pos1) * BOX_SIZE
+    , pos2px = -BOX_SIZE / 2 - (+pos2) * BOX_SIZE
+    , time_step = Math.abs((+time_ms) / ((+pos1px)-(+pos2px)))
+    , pos = pospx
+    , diff
+  
+  if (pos == undefined) pos = pos1px
+  if (pos1px <= pos2px) diff = 1;
+  if (pos1px >= pos2px) diff = -1;
+  
+  if (diff ==  1 && pos2px <= pos
+   || diff == -1 && pos2px >= pos) {
+     showTape(pos2px);
+     if (callback) callback()
+     return
+  }
+  
+  showTape(pos)
+  setTimeout("moveTape("+pos1+", "+pos2+", "+time_ms+", "+callback+", "+(pos+diff)+")", time_step);
+}
+/* Draws the tape into the appropriate canvas.
+ * pos_px is optional and gives the position of the tape in pixel
+ */
+function showTape(pos_px) {
+  var width  = tape_canvas.width
+    , height = tape_canvas.height
+    , BOX_SIZE = +document.getElementById('tape_size_slider').value
+    , FONT_SIZE = 16
+    , pos = pos_px || -BOX_SIZE / 2 - machine.head_pos * BOX_SIZE
+    , text_dim
+  
+  tape_ccontext.save();
+  
+  tape_ccontext.clearRect(0, 0, width, height);
+  tape_ccontext.strokeStyle = "black"
+  tape_ccontext.strokeRect(0, 0, width, height)
+  tape_ccontext.translate(width/2, height/2-BOX_SIZE/2)
+  
+  tape_ccontext.textBaseline = "middle"
+  tape_ccontext.font = FONT_SIZE+"pt sans-serif"
+  
+  for (var i = 0; i < machine.tape.length; i++) {
+    tape_ccontext.strokeRect(pos, 0, BOX_SIZE, BOX_SIZE)
+    if (machine.tape[i] != machine.blank_symbol) {
+      text_dim = tape_ccontext.measureText(machine.tape[i])
+      tape_ccontext.fillText(machine.tape[i],
+                             pos+BOX_SIZE/2 - text_dim.width/2 - 1,
+                             BOX_SIZE/2);
+    }
+    pos += BOX_SIZE
+  }
+  
+  tape_ccontext.strokeStyle = "red"
+  tape_ccontext.strokeRect(-BOX_SIZE/2-1, -5, BOX_SIZE+2, BOX_SIZE+10)
+  
+  tape_ccontext.restore()
+}
+
+  //match = /\s*(\w*)/.exec(document.getElementById('input').value)
+  //machine.tape = machine.input = match? match[1] || ''
+  //document.getElementById('input').value = machine.input
+  //machine.head_pos = 0
+
+    </script>
+  </head>
+  <body>
+    <div>
+      <a id="description_button" href="javascript:openDescription()" class="tabButton" style="background-color:lightblue">Description</a>
+      <a id="simulation_button" href="javascript:openSimulation()" class="tabButton">Simulation</a>
+      <a id="test_button" href="javascript:openTest()" class="tabButton">Test</a>
+    </div>
+    <div style="float:left; border:1px solid black">
+      <div id="description" class="tab">
+        <input id="compile" type="button" onclick="compile()" value="compile" /><span style="margin-left:10px"></span>
+        <input id="componthefly" type="checkbox" checked /> Compile on the fly<br>
+        Number of tapes: <input id="tape_count" type="text" value="1" size="2" onkeyup="descrChanged()" /><span style="margin-left:10px"></span>
+        Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="descrChanged()"/><br>
+        Initial state: <input id="initial_state" type="text" value="q1" size="5" onkeyup="descrChanged()"/><span style="margin-left:10px"></span>
+        Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="descrChanged()"/><br>
+        <input id="offline" type="checkbox" onclick="descrChanged()" /> Offline TM <span class="tip">(Move only R on the first tape.)</span><br>
+        <textarea id="transitions" rows="10" cols="70" onkeyup="descrChanged()">
+(q1, a) -> (q2, _, R)
+(q1, b) -> (q3, _, R)
+</textarea><br>
+        <pre id="compiler_errors" style="color:red; background-color:orange"></pre>
+        <input id="autocompl_determinism" type="checkbox" onclick="descrChanged()" /> All other transitions behave like transition number <input id="autocompl_number" type="text" size="2" disabled/>.<br>
+        <span id="autocompl_tip" class="tip" style="display:none">(Numbering for transition corresponds to line number in textarea above.)<br></span>
+        <input id="sort_transitions" type="checkbox" /> Sort transitions<br>
+        <br>
+        This TM ...<br>
+        <input id="type_calculator" type="radio" name="type_group"  onclick="descrChanged()" checked/>calculates a partial function.<br>
+        <span class="tip">(The TM halts for every input and the word the head is pointing to is the result.)</span><br>
+        <input id="type_decision_maker" type="radio" name="type_group" onclick="descrChanged()" />decides a language.<br>
+        <span class="tip">(The TM is a decider / a total Turing machine: Halts for every input with 0 or 1)</span><br>
+        <input id="type_acceptor" type="radio" name="type_group" onclick="descrChanged()" />accepts a language.<br>
+        <span class="tip">(The TM halts with 1 or loops.)</span><br>
+        <br>
+        <div style="clear:both; float:right">
+          <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="5" cols="40" disabled></textarea>
+        </div>
+      </div>
+      
+      <div id="simulation" class="tab" style="display:none">
+        <div style="float:left; margin:5px">
+          <canvas id="tape_canvas" width="500" height="100">
+            Der Browser unterstuetzt kein HTML5!
+          </canvas>
+        </div>
+        <div>
+          Input: <input id="input" type="text" value="abaaabbba" onkeyup="javascript:alert('something')"/><br>
+          <input type="button" onclick="action_schritt()" value="Schritt" />
+          <input type="button" onclick="action_berechnung()" value="Berechnung" />
+          <input type="button" onclick="action_reset()" value="Zurücksetzen" /><br>
+          Geschwindigkeit: <input id="speed_slider" type="range" min="0" max="5000" value="1000" step="100" /><br>
+          <span style="visibility:hidden">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="0" max="50" value="30" step="2" /></span>
+        </div>
+      </div>
+      
+      <div id="test" class="tab" style="display:none">
+        TODO
+      </div>
+    </div>
+    <div id="machine" style="width:300px; float:right; border:1px solid black; padding:5px"></div>
+  </body>
+</html>
