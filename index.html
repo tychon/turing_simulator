@@ -21,50 +21,62 @@
         margin-right:-5px;
         padding:5px;
         padding-bottom:0px;
-        border:1px solid black;
-        color:darkblue;
-        text-decoration:none;
-        background-color:lightgrey;
-        font-size:larger;
+        border: 1px solid black;
+        color: darkblue;
+        text-decoration: none;
+        background-color: lightgrey;
+        font-size: larger;
+      }
+      
+      a.simButton, a.simButton:hover {
+        margin:5px;
+        padding:5px;
+        border: 1px solid black;
+        border-radius: 5px;
+        color: darkblue;
+        text-decoration: none;
+      }
+      a.simButton:hover {
+        background-color: white;
       }
       
       div.tab {
         padding:5px;
         background-color: lightgrey;
-        border-top-right-radius:10px;
-        border-bottom-left-radius:10px;
-        border-bottom-right-radius:10px;
+        border-top-right-radius: 10px;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
       }
       
       table {
         font-size: 13px;
       }
       table.transitions {
-        border-collapse:collapse;
-        font-size:larger;
+        border-collapse: collapse;
+        font-size: larger;
       }
       th {
-        font-weight:normal;
-        font-size:small;
+        font-weight: normal;
+        font-size: small;
       }
       
       #tabPane {
-        border:1px solid black;
-        border-top-right-radius:10px;
-        border-bottom-left-radius:10px;
-        border-bottom-right-radius:10px;
-        margin-bottom:5px;
+        border: 1px solid black;
+        border-top-right-radius: 10px;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        margin-bottom: 5px;
       }
       
       #machine {
-        line-height:1.5;
+        line-height: 1.5;
         background-color: lightgrey;
-        padding:5px;
-        border:1px solid black;
-        border-radius:10px;
+        padding: 5px;
+        border: 1px solid black;
+        border-radius: 10px;
       }
       span.machineheader {
-        font-weight:bold;
+        font-weight: bold;
       }
       span.machine_prop {
         font-weight: bold;
@@ -92,13 +104,14 @@
     <script language="JavaScript">
 addEventListener("load", initialize, false);
 
-var tape_canvas, tape_ccontext, machine, working = false
+var tape_canvas, tape_ccontext, machine, sim = null, working = false
 function initialize() {
   tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
   tape_canvas = tape_ccontext.canvas;
   tape_ccontext.save();
   
   compile();
+  resetSimulation();
 }
 
 function openDescription() {
@@ -119,6 +132,8 @@ function openSimulation() {
   document.getElementById('description_button').style.backgroundColor = 'lightgrey'
   document.getElementById('simulation_button').style.backgroundColor = 'lightblue'
   document.getElementById('test_button').style.backgroundColor = 'lightgrey'
+  
+  resetSimulation();
 }
 function openTest() {
   document.getElementById('description').style.display = 'none'
@@ -144,12 +159,12 @@ function arrayToString(array) {
   </head>
   <body>
     <div>
-      <a id="description_button" href="javascript:openDescription()" class="tabButton" style="border-top-left-radius:5px; background-color:lightblue">Description</a>
-      <a id="simulation_button" href="javascript:openSimulation()" class="tabButton">Simulation</a>
+      <a id="description_button" href="javascript:openDescription()" class="tabButton" style="border-top-left-radius:5px; ">Description</a>
+      <a id="simulation_button" href="javascript:openSimulation()" class="tabButton" style="background-color:lightblue">Simulation</a>
       <a id="test_button" href="javascript:openTest()" class="tabButton" style="border-top-right-radius:5px">Test</a>
     </div>
     <div id="tabPane" style="float:left">
-      <div id="description" class="tab">
+      <div id="description" class="tab" style="display:none">
         <input id="compile" type="button" onclick="compile()" value="compile" />
         <input id="componthefly" type="checkbox" checked style="margin-left:10px"/> Compile on the fly
         <span class="tip" style="margin-left:10px">(Result shown in the box on the right.)</span><br>
@@ -161,17 +176,13 @@ function arrayToString(array) {
         </tbody></table>
         <input id="offline" type="checkbox" onclick="descrChanged()" /> Offline TM <span class="tip">(Move only R on the first tape.)</span><br>
         <textarea id="transitions" rows="10" cols="70" onkeyup="descrChanged()">
-(q1, a) -> (q2, _, R)
-(q1, b) -> (q2, _, R)
-(q1, _) -> (q2, _, R)
-(q2, a) -> (q2, _, R)
-(q2, b) -> (q2, _, R)
-(q2, _) -> (q2, _, R)
+(q1, _) -> (q2, a, R)
+(q2, a) -> (qf, a, N)
 </textarea><br>
         <pre id="compiler_errors" style="color:red; background-color:orange"></pre>
         <input id="autocompl_determinism" type="checkbox" onclick="descrChanged()" /> All other transitions behave like transition number
           <input id="autocompl_number" type="text" size="2" disabled onkeyup="descrChanged()" />.<br>
-        <span id="autocompl_tip" class="tip" style="display:none">(Numbering for transition corresponds to line number in textarea above.)<br></span>
+        <span id="autocompl_tip" class="tip" style="display:none">(Numbering for transition corresponds to order in the textarea above.<br>(Malformed transitions excluded!))<br></span>
         <span style="display:none"><input id="sort_transitions" type="checkbox" /> Sort transitions<br></span>
         <br>
         This TM ...<br>
@@ -183,21 +194,27 @@ function arrayToString(array) {
         <span class="tip">(The TM halts with 1 or loops.)</span><br>
       </div>
       
-      <div id="simulation" class="tab" style="display:none">
-        <div style="float:left; margin:5px">
+      
+      <div id="simulation" class="tab" style="display:block">
+        Input: <input id="sim_input" type="text" value="abaaabbba" onkeyup="resetSimulation()"/>
+        <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
+        <a href="javascript:resetSimulation()" class="simButton">Reset</a>
+        <div id="canvas_container" style="margin:5px; padding:5px">
           <canvas id="tape_canvas" width="500" height="100">
             Der Browser unterstuetzt kein HTML5!
           </canvas>
         </div>
         <div>
-          Input: <input id="input" type="text" value="abaaabbba" onkeyup="javascript:alert('something')"/><br>
-          <input type="button" onclick="action_schritt()" value="Schritt" />
-          <input type="button" onclick="action_berechnung()" value="Berechnung" />
-          <input type="button" onclick="action_reset()" value="Zurücksetzen" /><br>
-          Geschwindigkeit: <input id="speed_slider" type="range" min="0" max="5000" value="1000" step="100" /><br>
-          <span style="visibility:hidden">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="0" max="50" value="30" step="2" /></span>
+          <a href="javascript:sim_step()" class="simButton">STEP</a>
+          <a href="javascript:sim_revert()" class="simButton">Revert last step</a><br>
+          Geschwindigkeit: <input id="speed_slider" type="range" min="0" max="5000" value="1000" step="100" style="margin-top:10px"/><br>
+          <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="0" max="50" value="30" step="2" /></span><br>
+          <input id="parallel_tape_processing" type="checkbox"> Parallel tape processing<br>
+        </div>
+        <div id="configurations">
         </div>
       </div>
+      
       
       <div id="test" class="tab" style="display:none">
         TODO
