@@ -18,6 +18,7 @@
       }
       
       a.tabButton {
+        margin-right:-5px;
         padding:5px;
         padding-bottom:0px;
         border:1px solid black;
@@ -27,6 +28,10 @@
       
       div.tab {
         padding:5px;
+        background-color: lightgrey;
+        border-top-right-radius:10px;
+        border-bottom-left-radius:10px;
+        border-bottom-right-radius:10px;
       }
       
       table.transitions {
@@ -35,6 +40,19 @@
       th {
         font-weight:normal;
         font-size:small;
+      }
+      
+      #tabPane {
+        border:1px solid black;
+        border-top-right-radius:10px;
+        border-bottom-left-radius:10px;
+        border-bottom-right-radius:10px;
+      }
+      #machine {
+        background-color: lightgrey;
+        padding:5px;
+        border:1px solid black;
+        border-radius:10px;
       }
     </style>
     <script>
@@ -266,11 +284,11 @@ function showTape(pos_px) {
   </head>
   <body>
     <div>
-      <a id="description_button" href="javascript:openDescription()" class="tabButton" style="background-color:lightblue">Description</a>
+      <a id="description_button" href="javascript:openDescription()" class="tabButton" style="border-top-left-radius:5px; background-color:lightblue">Description</a>
       <a id="simulation_button" href="javascript:openSimulation()" class="tabButton">Simulation</a>
-      <a id="test_button" href="javascript:openTest()" class="tabButton">Test</a>
+      <a id="test_button" href="javascript:openTest()" class="tabButton" style="border-top-right-radius:5px">Test</a>
     </div>
-    <div style="float:left; border:1px solid black">
+    <div id="tabPane" style="float:left">
       <div id="description" class="tab">
         <input id="compile" type="button" onclick="compile()" value="compile" /><span style="margin-left:10px"></span>
         <input id="componthefly" type="checkbox" checked /> Compile on the fly<br>
@@ -295,10 +313,6 @@ function showTape(pos_px) {
         <span class="tip">(The TM is a decider / a total Turing machine: Halts for every input with 0 or 1)</span><br>
         <input id="type_acceptor" type="radio" name="type_group" onclick="descrChanged()" />accepts a language.<br>
         <span class="tip">(The TM halts with 1 or loops.)</span><br>
-        <br>
-        <div style="clear:both; float:right">
-          <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="5" cols="40" disabled></textarea>
-        </div>
       </div>
       
       <div id="simulation" class="tab" style="display:none">
@@ -321,6 +335,9 @@ function showTape(pos_px) {
         TODO
       </div>
     </div>
-    <div id="machine" style="width:300px; float:right; border:1px solid black; padding:5px"></div>
+    <div id="machine" style="width:300px; float:right"></div>
+    <div style="float:right">
+      <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="5" cols="40" disabled></textarea>
+    </div>
   </body>
 </html>
