@@ -58,13 +58,19 @@ function compile() {
         write: [],
         move: []
       }
+      
+      if (trans.origin == machine.final_state) {
+        errors.innerHTML += 'Transition '+(i+1)+' not valid: Final state must not have any outgoing transitions.\n'
+        continue;
+      }
+      
       for (var j = 2; j < 2+machine.tape_count; j++) trans.read.push(groups[j])
       for (var j = 3+machine.tape_count; j < 3+2*machine.tape_count; j++) trans.write.push(groups[j])
       for (var j = 3+2*machine.tape_count; j < 3+3*machine.tape_count; j++) trans.move.push(groups[j])
       
-      if (machine.properties.indexOf('offline') != -1
-       && trans.move[0] != 'R') {
+      if (machine.properties.indexOf('offline') != -1 && trans.move[0] != 'R') {
         errors.innerHTML += 'Transition '+(i+1)+' has to move R on the first band: '+transitions[i]+'\n'
+        continue;
       }
       
       machine.transitions.push(trans)
@@ -74,18 +80,25 @@ function compile() {
   }
   document.getElementById('machine_json').innerHTML = JSON.stringify(machine)
   
-  machine.alphabet = extractMachineAlphabet();
-  updateTMview();
+  machine.alphabet = extractMachineAlphabet()
+  machine.states = listMachineStates()
+  machine.deterministic = isDeterministic();
+  
+  // TODO sort?
+  
+  updateTMview()
 }
 function updateTMview() {
-  var t, html = '<em>Turing machine:</em><br>'
-      + 'Properties: <em>'+setToString(machine.properties)+'</em><br>\n'
-      + 'Number of tapes: <em>'+machine.tape_count+'</em><br>\n'
-      + 'Initial state: <em>'+machine.initial_state+'</em><br>\n'
-      + 'Blank Symbol: <em>'+machine.blank_symbol+'</em><br>\n'
-      + 'Final state: <em>'+machine.final_state+'</em><br>\n'
-      + 'Tape alphabet: <em>'+setToString(machine.alphabet)+'</em><br>\n'
-      + '<table border="1" class="transitions" style="margin-top:5px"><tr><th>#</th><th></th><th>origin</th>'
+  var t, html = '<span class="machineheader">Turing machine:</span><br>'
+      + 'Properties: <span class="machine_prop">'+setToString(machine.properties)+'</span><br>\n'
+      + 'Number of tapes: <span class="machine_prop">'+machine.tape_count+'</span><br>\n'
+      + 'States: <span class="machine_prop">'+setToString(machine.states)+'</span><br>\n'
+      + 'Tape alphabet: <span class="machine_prop">'+setToString(machine.alphabet)+'</span><br>\n'
+      + 'Initial state: <span class="machine_prop">'+machine.initial_state+'</span><br>\n'
+      + 'Blank Symbol: <span class="machine_prop">'+machine.blank_symbol+'</span><br>\n'
+      + 'Final state: <span class="machine_prop">'+machine.final_state+'</span><br>\n'
+  
+  html += '<table border="1" class="transitions" style="margin-top:5px"><tr><th>#</th><th></th><th>origin</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>read '+(i+1)+'</th>'
   html += '<th></th><th>dest</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>write '+(i+1)+'</th>'
@@ -100,24 +113,108 @@ function updateTMview() {
     t.move.forEach(function (val){html+= '<td>'+val+'</td>'})
     html += '</tr>\n'
   }
-  html += '</table>\n'
+  html += '</table><br>\n'
+  
+  html += '<span class="machineheader">Qualities:</span><br>\n'
+  if (machine.deterministic == '') html += '<span class="quality_ok">deterministic</span><br>'
+  else html += '<span class="quality_nok">not deterministic</span> <pre class="quality_errormsg">'+machine.deterministic+'</pre><br>'
+  
   document.getElementById('machine').innerHTML = html;
 }
-function setToString(array) {
-  var out = '{'
-  array.forEach(function (val) {out += val+', '})
-  return out.substring(0, out.length-2) + '}'
+function listMachineStates() {
+  var states = [machine.initial_state]
+  if (states.indexOf(machine.final_state) == -1) states.push(machine.final_state)
+  machine.transitions.forEach(function (val) {
+    if (states.indexOf(val.origin) == -1) states.push(val.origin)
+    if (states.indexOf(val.dest) == -1) states.push(val.dest)
+  })
+  return states.sort()
 }
 /* Returns the tape alphabet as an array.
  */
 function extractMachineAlphabet() {
-  var alphabet = [];
+  var alphabet = [machine.blank_symbol]
   machine.transitions.forEach(function (val) {
     for (var i = 0; i < machine.tape_count; i++) {
-      if (alphabet.indexOf(val.read[i]) == -1) alphabet.push(val.read[i]);
-      if (alphabet.indexOf(val.write[i]) == -1) alphabet.push(val.write[i]);
+      if (alphabet.indexOf(val.read[i]) == -1) alphabet.push(val.read[i])
+      if (alphabet.indexOf(val.write[i]) == -1) alphabet.push(val.write[i])
     }
-  });
-  return alphabet.sort();
+  })
+  return alphabet.sort()
+}
+
+/* Controls, if a transition exists for every alphabet-state-combination.
+ * If the appropriate checkbox is checked, missing transitions will be added.
+ * Returns a string containing the error message. If the string is '' the
+ * TM is deterministic.
+ */
+function isDeterministic() {
+  var autocomplete = false, autotrans, errorstr = '';
+  if (document.getElementById('autocompl_determinism').checked) {
+    autocomplete = true
+    autotransnum = parseInt(document.getElementById('autocompl_number').value)-1
+    if (autotransnum >= 0 && autotransnum < machine.transitions.length)
+      autotrans = machine.transitions[autotransnum]
+    else {
+      document.getElementById('autocompl_number').value = ''
+      autocomplete = false
+    }
+  }
+  
+  // for every state
+  machine.states.forEach(function (state) {
+    if (state == machine.final_state) return
+    
+    counter = [] // count the indices for the alphabet
+    // initialize counter
+    for (var i = 0; i < machine.tape_count; i++) counter.push(0);
+    
+    // for every input symbol combination
+    while (true) {
+      read = []
+      for (var j = 0; j < counter.length; j++) read.push(machine.alphabet[counter[j]])
+      
+      // search in machine.transitions
+      found = false
+      for (var j = 0; j < machine.transitions.length; j++) {
+        t = machine.transitions[j]
+        if (t.origin != state) continue
+        if (! arrayEqu(read, t.read)) continue
+        if (found) {
+          errorstr += 'Doubled transition (number '+(j+1)+'): '+JSON.stringify(t)+'\n'
+        } else found = true;
+      }
+      if (!found) {
+        if (autocomplete) {
+          //TODO
+          machine.transitions.push({
+            origin: state,
+            read: read.slice(),
+            dest: autotrans.dest,
+            write: autotrans.write,
+            move: autotrans.move
+          })
+        } else
+          errorstr += 'Missing transition: state="'+state+'" read="'+arrayToString(read)+'"\n'
+      }
+      
+      counter[0] ++
+      for (var j = 0; j < machine.tape_count; j++) {
+        if (counter[j] == machine.alphabet.length) {
+          counter[j] = 0
+          if (j+1 < counter.length) counter[j+1] ++
+          else return;
+        }
+        else break
+      }
+    }
+  })
+  
+  return errorstr
+}
+function arrayEqu(a1, a2) {
+  if (a1.length != a2.length) return false
+  for (i = 0; i < a1.length; a1 ++) if (a1[i] != a2[i]) return false
+  return true;
 }
 

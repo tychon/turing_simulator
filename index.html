@@ -24,6 +24,8 @@
         border:1px solid black;
         color:darkblue;
         text-decoration:none;
+        background-color:lightgrey;
+        font-size:larger;
       }
       
       div.tab {
@@ -34,8 +36,12 @@
         border-bottom-right-radius:10px;
       }
       
+      table {
+        font-size: 13px;
+      }
       table.transitions {
-        border-collapse:collapse
+        border-collapse:collapse;
+        font-size:larger;
       }
       th {
         font-weight:normal;
@@ -47,12 +53,37 @@
         border-top-right-radius:10px;
         border-bottom-left-radius:10px;
         border-bottom-right-radius:10px;
+        margin-bottom:5px;
       }
+      
       #machine {
+        line-height:1.5;
         background-color: lightgrey;
         padding:5px;
         border:1px solid black;
         border-radius:10px;
+      }
+      span.machineheader {
+        font-weight:bold;
+      }
+      span.machine_prop {
+        font-weight: bold;
+        font-family: monospaced;
+      }
+      span.quality_ok {
+        font-weight: bold;
+        font-size: larger;
+        color: green;
+      }
+      span.quality_nok {
+        font-weight: bold;
+        font-size: larger;
+        color: red;
+      }
+      pre.quality_errormsg {
+        font-size: small;
+        font-color: red;
+        background-color: orange;
       }
     </style>
     <script language="JavaScript" src="compiler.js"></script>
@@ -61,7 +92,7 @@
     <script language="JavaScript">
 addEventListener("load", initialize, false);
 
-var tape_canvas, tape_ccontext, machine
+var tape_canvas, tape_ccontext, machine, working = false
 function initialize() {
   tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
   tape_canvas = tape_ccontext.canvas;
@@ -71,33 +102,44 @@ function initialize() {
 }
 
 function openDescription() {
+  if (working) return;
   document.getElementById('description').style.display = 'block'
   document.getElementById('simulation').style.display = 'none'
   document.getElementById('test').style.display = 'none'
   
   document.getElementById('description_button').style.backgroundColor = 'lightblue'
-  document.getElementById('simulation_button').style.backgroundColor = 'white'
-  document.getElementById('test_button').style.backgroundColor = 'white'
+  document.getElementById('simulation_button').style.backgroundColor = 'lightgrey'
+  document.getElementById('test_button').style.backgroundColor = 'lightgrey'
 }
 function openSimulation() {
   document.getElementById('description').style.display = 'none'
   document.getElementById('simulation').style.display = 'block'
   document.getElementById('test').style.display = 'none'
   
-  document.getElementById('description_button').style.backgroundColor = 'white'
+  document.getElementById('description_button').style.backgroundColor = 'lightgrey'
   document.getElementById('simulation_button').style.backgroundColor = 'lightblue'
-  document.getElementById('test_button').style.backgroundColor = 'white'
+  document.getElementById('test_button').style.backgroundColor = 'lightgrey'
 }
 function openTest() {
   document.getElementById('description').style.display = 'none'
   document.getElementById('simulation').style.display = 'none'
   document.getElementById('test').style.display = 'block'
   
-  document.getElementById('description_button').style.backgroundColor = 'white'
-  document.getElementById('simulation_button').style.backgroundColor = 'white'
+  document.getElementById('description_button').style.backgroundColor = 'lightgrey'
+  document.getElementById('simulation_button').style.backgroundColor = 'lightgrey'
   document.getElementById('test_button').style.backgroundColor = 'lightblue'
 }
 
+function setToString(array) {
+  var out = '{'
+  array.forEach(function (val) {out += val+', '})
+  return out.substring(0, out.length-2) + '}'
+}
+function arrayToString(array) {
+  var out = ''
+  array.forEach(function (val) {out += val+', '})
+  return out.substring(0, out.length-2)
+}
     </script>
   </head>
   <body>
@@ -108,21 +150,29 @@ function openTest() {
     </div>
     <div id="tabPane" style="float:left">
       <div id="description" class="tab">
-        <input id="compile" type="button" onclick="compile()" value="compile" /><span style="margin-left:10px"></span>
-        <input id="componthefly" type="checkbox" checked /> Compile on the fly<br>
-        Number of tapes: <input id="tape_count" type="text" value="1" size="2" onkeyup="descrChanged()" /><span style="margin-left:10px"></span>
-        Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="descrChanged()"/><br>
-        Initial state: <input id="initial_state" type="text" value="q1" size="5" onkeyup="descrChanged()"/><span style="margin-left:10px"></span>
-        Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="descrChanged()"/><br>
+        <input id="compile" type="button" onclick="compile()" value="compile" />
+        <input id="componthefly" type="checkbox" checked style="margin-left:10px"/> Compile on the fly
+        <span class="tip" style="margin-left:10px">(Result shown in the box on the right.)</span><br>
+        <table><tbody>
+          <tr><td>Number of tapes: <input id="tape_count" type="text" value="1" size="2" onkeyup="descrChanged()" /></td>
+              <td>Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="descrChanged()"/></td></tr>
+          <tr><td>Initial state: <input id="initial_state" type="text" value="q1" size="5" onkeyup="descrChanged()"/></td>
+              <td>Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="descrChanged()"/></td></tr>
+        </tbody></table>
         <input id="offline" type="checkbox" onclick="descrChanged()" /> Offline TM <span class="tip">(Move only R on the first tape.)</span><br>
         <textarea id="transitions" rows="10" cols="70" onkeyup="descrChanged()">
 (q1, a) -> (q2, _, R)
-(q1, b) -> (q3, _, R)
+(q1, b) -> (q2, _, R)
+(q1, _) -> (q2, _, R)
+(q2, a) -> (q2, _, R)
+(q2, b) -> (q2, _, R)
+(q2, _) -> (q2, _, R)
 </textarea><br>
         <pre id="compiler_errors" style="color:red; background-color:orange"></pre>
-        <input id="autocompl_determinism" type="checkbox" onclick="descrChanged()" /> All other transitions behave like transition number <input id="autocompl_number" type="text" size="2" disabled/>.<br>
+        <input id="autocompl_determinism" type="checkbox" onclick="descrChanged()" /> All other transitions behave like transition number
+          <input id="autocompl_number" type="text" size="2" disabled onkeyup="descrChanged()" />.<br>
         <span id="autocompl_tip" class="tip" style="display:none">(Numbering for transition corresponds to line number in textarea above.)<br></span>
-        <input id="sort_transitions" type="checkbox" /> Sort transitions<br>
+        <span style="display:none"><input id="sort_transitions" type="checkbox" /> Sort transitions<br></span>
         <br>
         This TM ...<br>
         <input id="type_calculator" type="radio" name="type_group"  onclick="descrChanged()" checked/>calculates a partial function.<br>
