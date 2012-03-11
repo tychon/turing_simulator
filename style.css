@@ -86,8 +86,20 @@ span.quality_nok {
   color: red;
 }
 pre.quality_errormsg {
+  max-width: 300px;
   font-size: small;
   font-color: red;
   background-color: orange;
+}
+
+
+
+span.conf {
+}
+span.conf_head {
+  text-decoration: underline;
+}
+span.conf_state {
+  font-weight: bold;
 }
 

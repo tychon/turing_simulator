@@ -31,6 +31,8 @@ function resetSimulation() {
   showTapes()
   
   sim.info = 'start'
+  var config = copyOfConfiguration()
+  sim.configurations.push(config)
   updateInfoField()
 }
 function loadResizedCanvas() {
@@ -76,13 +78,16 @@ function sim_step(callback) {
       moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
         if (sim.state == machine.final_state) sim.info = 'finished'
         else if (sim.info != 'pause') sim.info = 'ok'
+        var config = copyOfConfiguration()
+        config.lastTrans = next
+        sim.configurations.push(config)
         updateInfoField()
         showTapes()
         if (callback) callback()
       })
     } else {
       //TODO support sequencely tape processing
-    /*
+      /*
       sim.state = transition.dest // state
       processTape = function (index, transition) {
         var positions, newpositions
@@ -121,7 +126,7 @@ function sim_step(callback) {
         }, total_time/2) //TODO
       }
       processTape(0, transition)
-    */
+      */
     }
   } else {
     sim.info = 'broken'
@@ -159,6 +164,40 @@ function updateInfoField() {
   
   if (sim.infotext) document.getElementById('sim_info_text').innerHTML = sim.infotext
   else document.getElementById('sim_info_text').innerHTML = ''
+  
+  // configuration field
+  var configs_field = document.getElementById('configurations')
+    , html = '', t
+  if (machine.tape_count == 1) {
+    sim.configurations.forEach(function(val) {
+      t = val.tapes[0]
+      html += '<span class="conf">'
+      if (t.head_pos > 0) html += t.content.substring(0, t.head_pos)
+      html += '<span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content.charAt(t.head_pos)+'</span>'
+      if (t.head_pos != t.content.length-1) html += t.content.substr(t.head_pos+2)+'</span>'
+      html += '<br>\n'
+    })
+  } else {
+    sim.configurations.forEach(function(val) {
+      html += '<span style="margin-right:10px">'+JSON.stringify(val)+'</span><br>\n'
+    })
+  }
+  configs_field.innerHTML = html
+}
+function copyOfConfiguration() {
+  copy = {
+    info: sim.info,
+    infotext: sim.infotext,
+    state: sim.state,
+    tapes: []
+  }
+  for (var i = 0; i < sim.tapes.length; i++) {
+    copy.tapes.push({
+      content: sim.tapes[i].content.substr(0),
+      head_pos: sim.tapes[i].head_pos
+    })
+  }
+  return copy
 }
 
 /* Calculates the positions in pixels for all tapes and
@@ -234,7 +273,7 @@ function showTapes(pos) {
   }
   
   // draw red box markin the heads
-  tape_ccontext.strokeStyle = "red"
+  tape_ccontext.strokeStyle = 'red'
   tape_ccontext.strokeRect(-BOX_SIZE/2-1, -3, BOX_SIZE+2, machine.tape_count*(BOX_SIZE+TAPE_DISTANCE)+7)
   
   tape_ccontext.restore()

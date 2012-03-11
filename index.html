@@ -122,10 +122,11 @@ function getElementsByClassName(classname, node)  {
   </head>
   <body>
     <div>
-      <a id="description_button" href="javascript:if(guiEnabled) openDescription()" class="button tabButton" style="margin-left:0px; border-top-left-radius:5px; ">Description</a>
+      <a id="description_button" href="javascript:if(guiEnabled) openDescription()" class="button tabButton" style="margin-left:0px; border-top-left-radius:5px">Description</a>
       <a id="simulation_button" href="javascript:if(guiEnabled) openSimulation()" class="button tabButton" style="background-color:lightblue">Simulation</a>
       <a id="test_button" href="javascript:if(guiEnabled) openTest()" class="button tabButton" style="border-top-right-radius:5px">Test</a>
     </div>
+    <div id="machine" style="min-width:300px; float:right"></div>
     <div id="tabPane" style="float:left">
       <div id="description" class="tab" style="display:none">
         <a href="javascript:if(guiEnabled) compile()" class="button">compile</a>
@@ -169,9 +170,9 @@ function getElementsByClassName(classname, node)  {
         <span style="display:none"><input id="sort_transitions" type="checkbox" /> Sort transitions<br></span>
         <br>
         This TM ...<br>
-        <input id="type_calculator" type="radio" name="type_group"  onclick="if(guiEnabled) descrChanged()" checked/>calculates a partial function.<br>
+        <input id="type_calculator" type="radio" name="type_group"  onclick="if(guiEnabled) descrChanged()" />calculates a partial function.<br>
         <span class="tip">(The TM halts for every input and the word the head is pointing to is the result.)</span><br>
-        <input id="type_decision_maker" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" />decides a language.<br>
+        <input id="type_decision_maker" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" checked />decides a language.<br>
         <span class="tip">(The TM is a decider / a total Turing machine: Halts for every input with 0 or 1)</span><br>
         <input id="type_acceptor" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" />accepts a language.<br>
         <span class="tip">(The TM halts with 1 or loops.)</span><br>
@@ -184,31 +185,25 @@ function getElementsByClassName(classname, node)  {
         <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
         <span class="tip">(Characters not in the alphabet are filtered out.)</span>
         <div id="canvas_container" style="margin:5px; padding:5px">
-          <canvas id="tape_canvas" width="500" height="100">
-            Der Browser unterstuetzt kein HTML5!
-          </canvas>
+          <canvas id="tape_canvas" width="500" height="100">Der Browser unterstuetzt kein HTML5 !</canvas>
         </div>
         <div>
           <span style="float:right">Status: <span id="sim_info" style="font-size:large"></span><br><span id="sim_info_text"></span></span>
           <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
           <a id="runpause" href="javascript: if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run()" class="button">RUN</a>
           <a href="javascript:if(guiEnabled) sim_revert()" class="button">Revert last step</a><br>
-          Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="0" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
+          Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="100" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
           <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="0" max="50" value="30" step="2" /></span><br>
           <span style="display:none"><input id="parallel_tape_processing" type="checkbox" checked> Parallel tape processing<br></span>
         </div>
-        <div id="configurations">
-        </div>
+        <div id="configurations" style="max-width: 500px; font-family: monospace"></div>
       </div>
       
       
-      <div id="test" class="tab" style="display:none">
-        TODO
-      </div>
+      <div id="test" class="tab" style="display:none">TODO</div>
     </div>
-    <div id="machine" style="width:300px; float:right"></div>
     <div style="float:right">
-      <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="5" cols="40" readonly></textarea>
+      <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="10" cols="60" readonly></textarea>
     </div>
   </body>
 </html>
