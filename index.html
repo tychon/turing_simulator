@@ -132,17 +132,35 @@ function getElementsByClassName(classname, node)  {
         <input id="componthefly" type="checkbox" checked style="margin-left:10px"/> Compile on the fly
         <span class="tip" style="margin-left:10px">(Result shown in the box on the right.)</span><br>
         <table><tbody>
-          <tr><td>Number of tapes: <input id="tape_count" type="text" value="2" size="2" onkeyup="if(guiEnabled) descrChanged()" /></td>
+          <tr><td>Number of tapes: <input id="tape_count" type="text" value="3" size="2" onkeyup="if(guiEnabled) descrChanged()" /></td>
               <td>Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="if(guiEnabled) descrChanged()"/></td></tr>
           <tr><td>Initial state: <input id="initial_state" type="text" value="q1" size="5" onkeyup="if(guiEnabled) descrChanged()"/></td>
               <td>Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="if(guiEnabled) descrChanged()"/></td></tr>
         </tbody></table>
         <input id="offline" type="checkbox" onclick="if(guiEnabled) descrChanged()" /> Offline TM <span class="tip">(Move only R on the first tape.)</span><br>
         <textarea id="transitions" rows="10" cols="70" onkeyup="if(guiEnabled) descrChanged()">
-(q1, _, _) -> (q1, b, b, R, L)
-(q1, b, _) -> (q1, _, b, R, R)
-(q1, _, b) -> (q1, _, b, R, R)
-(q1, b, b) -> (q1, _, b, R, R)
+(q1, _, _, _) -> (qf, 1, _, _, N, N, N)
+(q1, a, _, _) -> (q2, a, a, x, R, R, R)
+(q1, b, _, _) -> (q2, b, b, x, R, R, R)
+(q2, a, _, _) -> (q3, a, a, _, R, R, N)
+(q2, b, _, _) -> (q3, b, b, _, R, R, N)
+(q2, _, _, _) -> (qf, 0, _, _, N, N, N)
+(q3, a, _, _) -> (q2, a, a, x, R, R, R)
+(q3, b, _, _) -> (q2, b, b, x, R, R, R)
+(q3, _, _, _) -> (q4, _, _, _, L, L, L)
+(q4, a, a, x) -> (q4, a, _, x, L, L, L)
+(q4, b, b, x) -> (q4, b, _, x, L, L, L)
+(q4, a, a, _) -> (q4, a, a, _, N, L, N)
+(q4, b, b, _) -> (q4, b, b, _, N, L, N)
+(q4, a, b, _) -> (q4, a, b, _, N, L, N)
+(q4, b, a, _) -> (q4, b, a, _, N, L, N)
+(q4, a, _, _) -> (q5, a, _, _, R, R, N)
+(q4, b, _, _) -> (q5, b, _, _, R, R, N)
+(q5, a, a, _) -> (q5, a, a, _, R, R, N)
+(q5, b, b, _) -> (q5, b, b, _, R, R, N)
+(q5, a, b, _) -> (qf, 0, b, _, N, N, N)
+(q5, b, a, _) -> (qf, 0, a, _, N, N, N)
+(q5, _, _, _) -> (qf, 1, _, _, N, N, N)
 </textarea><br>
         <pre id="compiler_errors" style="color:red; background-color:orange"></pre>
         <input id="autocompl_determinism" type="checkbox" onclick="if(guiEnabled) descrChanged()" /> All other transitions behave like transition number
@@ -161,7 +179,7 @@ function getElementsByClassName(classname, node)  {
       
       
       <div id="simulation" class="tab" style="display:block">
-        Input: <input id="sim_input" type="text" value="" onkeyup="if(guiEnabled) resetSimulation()"/>
+        Input: <input id="sim_input" type="text" value="abbabb" onkeyup="if(guiEnabled) resetSimulation()"/>
         <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
         <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
         <span class="tip">(Characters not in the alphabet are filtered out.)</span>
