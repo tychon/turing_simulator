@@ -36,7 +36,7 @@ function resetSimulation() {
 function loadResizedCanvas() {
   var BOX_SIZE = +document.getElementById('tape_size_slider').value
     , container = document.getElementById('canvas_container')
-  container.innerHTML = '<canvas id="tape_canvas" width="500" height="'+((machine.tape_count+1)*BOX_SIZE)+'">Der Browser unterstuetzt kein HTML5!</canvas>'
+  container.innerHTML = '<canvas id="tape_canvas" width="500" height="'+((machine.tape_count+1)*(BOX_SIZE+TAPE_DISTANCE)-TAPE_DISTANCE)+'">Der Browser unterstuetzt kein HTML5!</canvas>'
   tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
   tape_canvas = tape_ccontext.canvas;
 }
@@ -63,7 +63,10 @@ function sim_step(callback) {
         tape = sim.tapes[i]
         tape.content = setCharAt(tape.content, tape.head_pos, transition.write[i])
         if (transition.move[i] == 'L') {
-            if (tape.head_pos == 0) tape.content = machine.blank_symbol+tape.content
+            if (tape.head_pos == 0) {
+              tape.content = machine.blank_symbol+tape.content
+              oldpos[i] -= +document.getElementById('tape_size_slider').value
+            }
             else tape.head_pos --
           } else if (transition.move[i] == 'R') {
             if (tape.head_pos == tape.content.length-1) tape.content = tape.content+machine.blank_symbol
@@ -72,12 +75,13 @@ function sim_step(callback) {
       }
       moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
         if (sim.state == machine.final_state) sim.info = 'finished'
-        else sim.info = 'ok'
+        else if (sim.info != 'pause') sim.info = 'ok'
         updateInfoField()
         showTapes()
         if (callback) callback()
       })
     } else {
+      //TODO support sequencely tape processing
     /*
       sim.state = transition.dest // state
       processTape = function (index, transition) {
@@ -171,6 +175,7 @@ function calculateTapePositions(heads) {
   }
   return pos;
 }
+var TAPE_DISTANCE = 4
 /* Draws the tapes into the appropriate canvas.
  * pos must be an array with the position of the tapes in pixels.
  */
@@ -181,7 +186,7 @@ function showTapes(pos) {
     , BOX_SIZE = +document.getElementById('tape_size_slider').value
     , width  = tape_canvas.width
     , height = tape_canvas.height
-    , text_dim, tape, xpos, ypos
+    , text_dim, tape, shift, xpos, ypos
   
   tape_ccontext.save();
   
@@ -202,12 +207,13 @@ function showTapes(pos) {
   ypos = 0
   for (var i = 0; i < sim.tapes.length; i++) {
     tape = sim.tapes[i];
-    xpos = (Math.floor((-width/2) / BOX_SIZE)-1) * BOX_SIZE - BOX_SIZE/2
+    shift = (pos[i] + BOX_SIZE/2) % BOX_SIZE
+    xpos = shift + (Math.floor((-width/2) / BOX_SIZE)-1) * BOX_SIZE - BOX_SIZE/2
     while (xpos < width/2) {
       tape_ccontext.strokeRect(xpos, ypos, BOX_SIZE, BOX_SIZE)
       xpos += BOX_SIZE
     }
-    ypos += BOX_SIZE
+    ypos += BOX_SIZE + TAPE_DISTANCE
   }
   
   // fill tapes
@@ -224,12 +230,12 @@ function showTapes(pos) {
       }
       xpos += BOX_SIZE
     }
-    ypos += BOX_SIZE
+    ypos += BOX_SIZE + 4
   }
   
   // draw red box markin the heads
   tape_ccontext.strokeStyle = "red"
-  tape_ccontext.strokeRect(-BOX_SIZE/2-1, -3, BOX_SIZE+2, machine.tape_count*BOX_SIZE+7)
+  tape_ccontext.strokeRect(-BOX_SIZE/2-1, -3, BOX_SIZE+2, machine.tape_count*(BOX_SIZE+TAPE_DISTANCE)+7)
   
   tape_ccontext.restore()
 }

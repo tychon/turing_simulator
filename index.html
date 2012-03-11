@@ -175,7 +175,7 @@ function getElementsByClassName(classname, node)  {
           <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
           <a id="runpause" href="javascript: if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run()" class="button">RUN</a>
           <a href="javascript:if(guiEnabled) sim_revert()" class="button">Revert last step</a><br>
-          Geschwindigkeit: <input id="speed_slider" type="range" min="0" max="5000" value="1000" step="100" style="margin-top:10px"/><br>
+          Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="0" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
           <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="0" max="50" value="30" step="2" /></span><br>
           <span style="display:none"><input id="parallel_tape_processing" type="checkbox" checked> Parallel tape processing<br></span>
         </div>
