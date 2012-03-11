@@ -16,81 +16,205 @@ function resetSimulation() {
   }
   for (var i = 0; i < machine.tape_count; i++) {
     sim.tapes.push({
-      content: '',
+      content: machine.blank_symbol,
       head_pos: 0
     })
   }
   
   var input = document.getElementById('sim_input').value
   input = input.replace(new RegExp('[^'+machine.alphabet.join()+']', 'g'), '');
+  if (input.length == '') input = machine.blank_symbol
   sim.tapes[0].content = input
   // document.getElementById('sim_input').value = input
   
   loadResizedCanvas();
-  showTape()
+  showTapes()
+  
+  sim.info = 'start'
+  updateInfoField()
+}
+function loadResizedCanvas() {
+  var BOX_SIZE = +document.getElementById('tape_size_slider').value
+    , container = document.getElementById('canvas_container')
+  container.innerHTML = '<canvas id="tape_canvas" width="500" height="'+((machine.tape_count+1)*BOX_SIZE)+'">Der Browser unterstuetzt kein HTML5!</canvas>'
+  tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
+  tape_canvas = tape_ccontext.canvas;
 }
 
-function moveTape(pos1, pos2, time_ms, callback, pospx) {
-  var BOX_SIZE = +document.getElementById('tape_size_slider').value
-    , pos1px = -BOX_SIZE / 2 - (+pos1) * BOX_SIZE
-    , pos2px = -BOX_SIZE / 2 - (+pos2) * BOX_SIZE
-    , time_step = Math.abs((+time_ms) / ((+pos1px)-(+pos2px)))
-    , pos = pospx
-    , diff
+function sim_step(callback) {
+  if (sim.info != 'ok' && sim.info != 'start') {
+    if (callback) callback()
+    return
+  }
+  sim.info = 'running'
+  updateInfoField()
   
-  if (pos == undefined) pos = pos1px
-  if (pos1px <= pos2px) diff = 1;
-  if (pos1px >= pos2px) diff = -1;
+  var next = findNextTransition()
+    , transition = next? next.transition : null
+    , total_time = document.getElementById('speed_slider').value
+    , parallel = document.getElementById('parallel_tape_processing').checked
   
-  if (diff ==  1 && pos2px <= pos
-   || diff == -1 && pos2px >= pos) {
-     showTape(pos2px);
-     if (callback) callback()
-     return
+  if (next) {
+    if (parallel) {
+      sim.state = transition.dest
+      var oldpos = calculateTapePositions()
+        , tape, newpos
+      for (var i = 0; i < sim.tapes.length; i++) {
+        tape = sim.tapes[i]
+        tape.content = setCharAt(tape.content, tape.head_pos, transition.write[i])
+        if (transition.move[i] == 'L') {
+            if (tape.head_pos == 0) tape.content = machine.blank_symbol+tape.content
+            else tape.head_pos --
+          } else if (transition.move[i] == 'R') {
+            if (tape.head_pos == tape.content.length-1) tape.content = tape.content+machine.blank_symbol
+            tape.head_pos ++
+          }
+      }
+      moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
+        if (sim.state == machine.final_state) sim.info = 'finished'
+        else sim.info = 'ok'
+        updateInfoField()
+        showTapes()
+        if (callback) callback()
+      })
+    } else {
+    /*
+      sim.state = transition.dest // state
+      processTape = function (index, transition) {
+        var positions, newpositions
+          , tape = sim.tapes[index]
+        tape.content = setCharAt(tape.content, tape.head_pos, transition.write[index])
+        showTapes()
+        setTimeout(function() {
+          oldpos = calculateTapePositions()
+          
+          if (transition.move[index] == 'L') {
+            if (tape.head_pos == 0) {
+              tape.head_pos ++
+              oldpos = calculateTapePositions()
+              tape.content = machine.blank_symbol+tape.content
+              tape.head_pos --
+            }
+            else tape.head_pos --
+          } else if (transition.move[index] == 'R') {
+            if (tape.head_pos == tape.content.length-1) tape.content = tape.content+machine.blank_symbol
+            tape.head_pos ++
+          }
+          
+          newpos = calculateTapePositions()
+          moveTapes(oldpos, newpos, 500, function() {
+            if (index+1 < sim.tapes.length) {
+              setTimeout(function(){processTape(index+1, transition)}, 500)
+            } else {
+              if (sim.state == machine.final_state) sim.info = 'finished'
+              else sim.info = 'ok'
+              
+              updateInfoField()
+              showTapes()
+              disableGui = false
+            }
+          })
+        }, total_time/2) //TODO
+      }
+      processTape(0, transition)
+    */
+    }
+  } else {
+    sim.info = 'broken'
+    sim.infotext = 'No matching transition found'
+    updateInfoField()
+    showTapes()
+    if (callback) callback()
+  }
+}
+
+function sim_run() {
+  //TODO pause
+  disableGui()
+  document.getElementById('runpause').innerHTML = 'PAUSE'
+  sim_step(function() {
+    if (sim.info == 'ok') { setTimeout(function(){ sim_run() }, 500) }
+    else {
+      if (sim.info == 'pause') sim.info = 'ok'
+      enableGui()
+      document.getElementById('runpause').innerHTML = 'RUN'
+    }
+  })
+}
+
+function updateInfoField() {
+  document.getElementById('sim_info').style.color = 'green'
+  if (sim.info == 'start') {
+    document.getElementById('sim_info').innerHTML = 'ready to start'
+  } else {
+    document.getElementById('sim_info').innerHTML = sim.info
+    if (sim.info == 'broken') {
+      document.getElementById('sim_info').style.color = 'red'
+    }
   }
   
-  showTape(pos)
-  setTimeout("moveTape("+pos1+", "+pos2+", "+time_ms+", "+callback+", "+(pos+diff)+")", time_step);
+  if (sim.infotext) document.getElementById('sim_info_text').innerHTML = sim.infotext
+  else document.getElementById('sim_info_text').innerHTML = ''
 }
-/* Draws the tape into the appropriate canvas.
- * pos_px is optional and gives the position of the tape in pixel
+
+/* Calculates the positions in pixels for all tapes and
+ * returns them as an array.
+ * You CAN give an array with head positions differing from the
+ * 'real' positions.
  */
-function showTape(pos_px) {
-  var width  = tape_canvas.width
-    , height = tape_canvas.height
+function calculateTapePositions(heads) {
+  var pos = []
     , BOX_SIZE = +document.getElementById('tape_size_slider').value
-    , FONT_SIZE = 16
-    , text_dim, tape, ypos = 0, xpos
+  for (var i = 0; i < sim.tapes.length; i++) {
+    if (heads) pos.push(-BOX_SIZE / 2 - heads[i] * BOX_SIZE)
+    else pos.push(-BOX_SIZE / 2 - sim.tapes[i].head_pos * BOX_SIZE)
+  }
+  return pos;
+}
+/* Draws the tapes into the appropriate canvas.
+ * pos must be an array with the position of the tapes in pixels.
+ */
+function showTapes(pos) {
+  if (pos == undefined) pos = calculateTapePositions()
+  
+  var FONT_SIZE = 16
+    , BOX_SIZE = +document.getElementById('tape_size_slider').value
+    , width  = tape_canvas.width
+    , height = tape_canvas.height
+    , text_dim, tape, xpos, ypos
   
   tape_ccontext.save();
   
+  // draw border
   tape_ccontext.clearRect(0, 0, width, height);
   tape_ccontext.strokeStyle = "black"
   tape_ccontext.strokeRect(0, 0, width, height)
   tape_ccontext.translate(width/2, BOX_SIZE)
-  
+  // initialise font
   tape_ccontext.textBaseline = "middle"
   tape_ccontext.font = FONT_SIZE+"pt sans-serif"
   
-  // state
+  // draw state
   text_dim = tape_ccontext.measureText(sim.state)
   tape_ccontext.fillText(sim.state, -text_dim.width/2, -BOX_SIZE/2)
   
-  // draw tapes
+  // draw tapes (independent from pos, because they fill the whole width)
+  ypos = 0
   for (var i = 0; i < sim.tapes.length; i++) {
     tape = sim.tapes[i];
-    xpos = pos_px? pos_px[i] : (Math.floor((-width/2) / BOX_SIZE)-1) * BOX_SIZE - BOX_SIZE/2
+    xpos = (Math.floor((-width/2) / BOX_SIZE)-1) * BOX_SIZE - BOX_SIZE/2
     while (xpos < width/2) {
       tape_ccontext.strokeRect(xpos, ypos, BOX_SIZE, BOX_SIZE)
       xpos += BOX_SIZE
     }
     ypos += BOX_SIZE
   }
+  
   // fill tapes
   ypos = 0
   for (var i = 0; i < sim.tapes.length; i++) {
-    tape = sim.tapes[i];
-    xpos = pos_px? pos_px[i] : -BOX_SIZE / 2 - tape.head_pos * BOX_SIZE
+    tape = sim.tapes[i]
+    xpos = pos[i]
     for (var j = 0; j < tape.content.length; j++) {
       if (tape.content[j] != machine.blank_symbol) {
         text_dim = tape_ccontext.measureText(tape.content[j])
@@ -103,16 +227,55 @@ function showTape(pos_px) {
     ypos += BOX_SIZE
   }
   
+  // draw red box markin the heads
   tape_ccontext.strokeStyle = "red"
   tape_ccontext.strokeRect(-BOX_SIZE/2-1, -3, BOX_SIZE+2, machine.tape_count*BOX_SIZE+7)
   
   tape_ccontext.restore()
 }
-function loadResizedCanvas() {
-  var BOX_SIZE = +document.getElementById('tape_size_slider').value
-    , container = document.getElementById('canvas_container')
-  container.innerHTML = '<canvas id="tape_canvas" width="500" height="'+((machine.tape_count+1)*BOX_SIZE)+'">Der Browser unterstuetzt kein HTML5!</canvas>'
-  tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
-  tape_canvas = tape_ccontext.canvas;
+var SIM_MOTION_STEP_MS = 50 // time for one step
+/* Move the tapes fluently from pos1 to pos2 in the given time.
+ * pos1 are the starting positions and pos2 the end positions as arrays.
+ * time_ms gives the time for the whole motions.
+ * The callback is called when the motions finished.
+ */
+function moveTapes(pos1, pos2, time_ms, callback) {
+  var step_num = time_ms/SIM_MOTION_STEP_MS // number of steps at all
+    , steps = []
+    , variation = false
+    , tmp
+  for (var i = 0; i < pos1.length; i++) {
+    tmp = (pos2[i]-pos1[i]) / step_num
+    steps.push( (pos2[i]-pos1[i]) / step_num )
+    if (tmp != 0) variation = true;
+  }
+  
+  if (variation) _moveTapes(pos1.slice(), pos2, steps, callback)
+  else {
+    showTapes(pos2);
+    if (callback) callback();
+  }
+}
+/* Perform one step of the motion */
+function _moveTapes(pos, endpos, steps, callback) {
+  // test for end (if one pos reached the end)
+  for (var i = 0; i < pos.length; i++) {
+    if (steps[i] > 0 && pos[i] >= endpos[i] || steps[i] < 0 && pos[i] <= endpos[i]) {
+      showTapes(endpos);
+      if (callback) callback();
+      return;
+    }
+  }
+  
+  // show tapes
+  showTapes(pos)
+  
+  // do one step
+  for (var i = 0; i < pos.length; i++) {
+    pos[i] += steps[i];
+  }
+  
+  // initiate next step
+  setTimeout(function(){_moveTapes(pos, endpos, steps, callback)}, SIM_MOTION_STEP_MS)
 }
 

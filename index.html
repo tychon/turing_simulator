@@ -1,110 +1,15 @@
 <html>
   <head>
     <title>Turing-Maschine</title>
-    <style>
-      body {
-        color:darkblue;
-        text-align: justify;
-        font-family: sans-serif;
-        font-size: 13px;
-      }
-      em {
-        font-weight:bold;
-        font-style:normal;
-      }
-      span.tip {
-        text-size:small;
-        color:grey;
-      }
-      
-      a.tabButton {
-        margin-right:-5px;
-        padding:5px;
-        padding-bottom:0px;
-        border: 1px solid black;
-        color: darkblue;
-        text-decoration: none;
-        background-color: lightgrey;
-        font-size: larger;
-      }
-      
-      a.simButton, a.simButton:hover {
-        margin:5px;
-        padding:5px;
-        border: 1px solid black;
-        border-radius: 5px;
-        color: darkblue;
-        text-decoration: none;
-      }
-      a.simButton:hover {
-        background-color: white;
-      }
-      
-      div.tab {
-        padding:5px;
-        background-color: lightgrey;
-        border-top-right-radius: 10px;
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
-      }
-      
-      table {
-        font-size: 13px;
-      }
-      table.transitions {
-        border-collapse: collapse;
-        font-size: larger;
-      }
-      th {
-        font-weight: normal;
-        font-size: small;
-      }
-      
-      #tabPane {
-        border: 1px solid black;
-        border-top-right-radius: 10px;
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
-        margin-bottom: 5px;
-      }
-      
-      #machine {
-        line-height: 1.5;
-        background-color: lightgrey;
-        padding: 5px;
-        border: 1px solid black;
-        border-radius: 10px;
-      }
-      span.machineheader {
-        font-weight: bold;
-      }
-      span.machine_prop {
-        font-weight: bold;
-        font-family: monospaced;
-      }
-      span.quality_ok {
-        font-weight: bold;
-        font-size: larger;
-        color: green;
-      }
-      span.quality_nok {
-        font-weight: bold;
-        font-size: larger;
-        color: red;
-      }
-      pre.quality_errormsg {
-        font-size: small;
-        font-color: red;
-        background-color: orange;
-      }
-    </style>
+    <link rel="stylesheet" type="text/css" href="style.css">
     <script language="JavaScript" src="compiler.js"></script>
     <script language="JavaScript" src="simulation.js"></script>
     <script language="JavaScript" src="test.js"></script>
     <script language="JavaScript">
 addEventListener("load", initialize, false);
 
-var tape_canvas, tape_ccontext, machine, sim = null, working = false
+var tape_canvas, tape_ccontext, machine, sim = null
+  , guiEnabled = true
 function initialize() {
   tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
   tape_canvas = tape_ccontext.canvas;
@@ -115,7 +20,7 @@ function initialize() {
 }
 
 function openDescription() {
-  if (working) return;
+  if (sim != null && sim.info == 'running') return;
   document.getElementById('description').style.display = 'block'
   document.getElementById('simulation').style.display = 'none'
   document.getElementById('test').style.display = 'none'
@@ -145,6 +50,10 @@ function openTest() {
   document.getElementById('test_button').style.backgroundColor = 'lightblue'
 }
 
+function setCharAt(str,index,chr) {
+	if(index > str.length-1) return str;
+	return str.substr(0,index) + chr + str.substr(index+1);
+}
 function setToString(array) {
   var out = '{'
   array.forEach(function (val) {out += val+', '})
@@ -155,61 +64,120 @@ function arrayToString(array) {
   array.forEach(function (val) {out += val+', '})
   return out.substring(0, out.length-2)
 }
+function arrayEqu(a1, a2) {
+  if (a1.length != a2.length) return false
+  for (i = 0; i < a1.length; a1 ++) if (a1[i] != a2[i]) return false
+  return true;
+}
+function findNextTransition() {
+  var t, diff
+  for (var i = 0; i < machine.transitions.length; i++) {
+    t = machine.transitions[i]
+    if (t.origin != sim.state) continue
+    diff = false
+    for (var j = 0; j < t.read.length; j++) {
+      if (t.read[j] != sim.tapes[j].content[sim.tapes[j].head_pos]) {
+        diff = true
+        break
+      }
+    }
+    if (diff) continue
+    
+    return {index: i, transition: t}
+  }
+  return null
+}
+
+
+function disableGui(mode) {
+  guiEnabled = false
+  var els = getElementsByClassName("button")
+  els.forEach(function (val) {
+    if (mode != 'all' && val.id == 'runpause') return
+    val.style.backgroundColor = 'lightgrey'
+    val.onmouseover = function() { val.style.backgroundColor = 'lightgrey' }
+    val.onmouseout = function() { val.style.backgroundColor = 'lightgrey' }
+  })
+}
+function enableGui() {
+  guiEnabled = true
+  var els = getElementsByClassName("button")
+  els.forEach(function (val) {
+    val.style.backgroundColor = 'white'
+    val.onmouseover = function() { val.style.backgroundColor = 'lightblue' }
+    val.onmouseout = function() { val.style.backgroundColor = 'white' }
+  })
+}
+function getElementsByClassName(classname, node)  {
+    if(!node) node = document.getElementsByTagName("body")[0];
+    var a = [];
+    var re = new RegExp('\\b' + classname + '\\b');
+    var els = node.getElementsByTagName("*");
+    for(var i=0,j=els.length; i<j; i++)
+        if(re.test(els[i].className))a.push(els[i]);
+    return a;
+}
+
     </script>
   </head>
   <body>
     <div>
-      <a id="description_button" href="javascript:openDescription()" class="tabButton" style="border-top-left-radius:5px; ">Description</a>
-      <a id="simulation_button" href="javascript:openSimulation()" class="tabButton" style="background-color:lightblue">Simulation</a>
-      <a id="test_button" href="javascript:openTest()" class="tabButton" style="border-top-right-radius:5px">Test</a>
+      <a id="description_button" href="javascript:if(guiEnabled) openDescription()" class="button tabButton" style="margin-left:0px; border-top-left-radius:5px; ">Description</a>
+      <a id="simulation_button" href="javascript:if(guiEnabled) openSimulation()" class="button tabButton" style="background-color:lightblue">Simulation</a>
+      <a id="test_button" href="javascript:if(guiEnabled) openTest()" class="button tabButton" style="border-top-right-radius:5px">Test</a>
     </div>
     <div id="tabPane" style="float:left">
       <div id="description" class="tab" style="display:none">
-        <input id="compile" type="button" onclick="compile()" value="compile" />
+        <a href="javascript:if(guiEnabled) compile()" class="button">compile</a>
         <input id="componthefly" type="checkbox" checked style="margin-left:10px"/> Compile on the fly
         <span class="tip" style="margin-left:10px">(Result shown in the box on the right.)</span><br>
         <table><tbody>
-          <tr><td>Number of tapes: <input id="tape_count" type="text" value="1" size="2" onkeyup="descrChanged()" /></td>
-              <td>Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="descrChanged()"/></td></tr>
-          <tr><td>Initial state: <input id="initial_state" type="text" value="q1" size="5" onkeyup="descrChanged()"/></td>
-              <td>Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="descrChanged()"/></td></tr>
+          <tr><td>Number of tapes: <input id="tape_count" type="text" value="2" size="2" onkeyup="if(guiEnabled) descrChanged()" /></td>
+              <td>Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="if(guiEnabled) descrChanged()"/></td></tr>
+          <tr><td>Initial state: <input id="initial_state" type="text" value="q1" size="5" onkeyup="if(guiEnabled) descrChanged()"/></td>
+              <td>Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="if(guiEnabled) descrChanged()"/></td></tr>
         </tbody></table>
-        <input id="offline" type="checkbox" onclick="descrChanged()" /> Offline TM <span class="tip">(Move only R on the first tape.)</span><br>
-        <textarea id="transitions" rows="10" cols="70" onkeyup="descrChanged()">
-(q1, _) -> (q2, a, R)
-(q2, a) -> (qf, a, N)
+        <input id="offline" type="checkbox" onclick="if(guiEnabled) descrChanged()" /> Offline TM <span class="tip">(Move only R on the first tape.)</span><br>
+        <textarea id="transitions" rows="10" cols="70" onkeyup="if(guiEnabled) descrChanged()">
+(q1, _, _) -> (q1, b, b, R, L)
+(q1, b, _) -> (q1, _, b, R, R)
+(q1, _, b) -> (q1, _, b, R, R)
+(q1, b, b) -> (q1, _, b, R, R)
 </textarea><br>
         <pre id="compiler_errors" style="color:red; background-color:orange"></pre>
-        <input id="autocompl_determinism" type="checkbox" onclick="descrChanged()" /> All other transitions behave like transition number
-          <input id="autocompl_number" type="text" size="2" disabled onkeyup="descrChanged()" />.<br>
+        <input id="autocompl_determinism" type="checkbox" onclick="if(guiEnabled) descrChanged()" /> All other transitions behave like transition number
+          <input id="autocompl_number" type="text" size="2" disabled onkeyup="if(guiEnabled) descrChanged()" />.<br>
         <span id="autocompl_tip" class="tip" style="display:none">(Numbering for transition corresponds to order in the textarea above.<br>(Malformed transitions excluded!))<br></span>
         <span style="display:none"><input id="sort_transitions" type="checkbox" /> Sort transitions<br></span>
         <br>
         This TM ...<br>
-        <input id="type_calculator" type="radio" name="type_group"  onclick="descrChanged()" checked/>calculates a partial function.<br>
+        <input id="type_calculator" type="radio" name="type_group"  onclick="if(guiEnabled) descrChanged()" checked/>calculates a partial function.<br>
         <span class="tip">(The TM halts for every input and the word the head is pointing to is the result.)</span><br>
-        <input id="type_decision_maker" type="radio" name="type_group" onclick="descrChanged()" />decides a language.<br>
+        <input id="type_decision_maker" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" />decides a language.<br>
         <span class="tip">(The TM is a decider / a total Turing machine: Halts for every input with 0 or 1)</span><br>
-        <input id="type_acceptor" type="radio" name="type_group" onclick="descrChanged()" />accepts a language.<br>
+        <input id="type_acceptor" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" />accepts a language.<br>
         <span class="tip">(The TM halts with 1 or loops.)</span><br>
       </div>
       
       
       <div id="simulation" class="tab" style="display:block">
-        Input: <input id="sim_input" type="text" value="abaaabbba" onkeyup="resetSimulation()"/>
+        Input: <input id="sim_input" type="text" value="" onkeyup="if(guiEnabled) resetSimulation()"/>
         <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
-        <a href="javascript:resetSimulation()" class="simButton">Reset</a>
+        <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
+        <span class="tip">(Characters not in the alphabet are filtered out.)</span>
         <div id="canvas_container" style="margin:5px; padding:5px">
           <canvas id="tape_canvas" width="500" height="100">
             Der Browser unterstuetzt kein HTML5!
           </canvas>
         </div>
         <div>
-          <a href="javascript:sim_step()" class="simButton">STEP</a>
-          <a href="javascript:sim_revert()" class="simButton">Revert last step</a><br>
+          <span style="float:right">Status: <span id="sim_info" style="font-size:large"></span><br><span id="sim_info_text"></span></span>
+          <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
+          <a id="runpause" href="javascript: if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run()" class="button">RUN</a>
+          <a href="javascript:if(guiEnabled) sim_revert()" class="button">Revert last step</a><br>
           Geschwindigkeit: <input id="speed_slider" type="range" min="0" max="5000" value="1000" step="100" style="margin-top:10px"/><br>
           <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="0" max="50" value="30" step="2" /></span><br>
-          <input id="parallel_tape_processing" type="checkbox"> Parallel tape processing<br>
+          <span style="display:none"><input id="parallel_tape_processing" type="checkbox" checked> Parallel tape processing<br></span>
         </div>
         <div id="configurations">
         </div>
@@ -222,7 +190,7 @@ function arrayToString(array) {
     </div>
     <div id="machine" style="width:300px; float:right"></div>
     <div style="float:right">
-      <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="5" cols="40" disabled></textarea>
+      <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="5" cols="40" readonly></textarea>
     </div>
   </body>
 </html>

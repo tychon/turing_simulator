@@ -98,7 +98,7 @@ function updateTMview() {
       + 'Blank Symbol: <span class="machine_prop">'+machine.blank_symbol+'</span><br>\n'
       + 'Final state: <span class="machine_prop">'+machine.final_state+'</span><br>\n'
   
-  html += '<table border="1" class="transitions" style="margin-top:5px"><tr><th>#</th><th></th><th>origin</th>'
+  html += 'Turing table:<br><table border="1" class="transitions" style="margin-top:5px"><tr><th>#</th><th></th><th>origin</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>read '+(i+1)+'</th>'
   html += '<th></th><th>dest</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>write '+(i+1)+'</th>'
@@ -211,10 +211,5 @@ function isDeterministic() {
   })
   
   return errorstr
-}
-function arrayEqu(a1, a2) {
-  if (a1.length != a2.length) return false
-  for (i = 0; i < a1.length; a1 ++) if (a1[i] != a2[i]) return false
-  return true;
 }
 

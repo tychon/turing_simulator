@@ -1,0 +1,93 @@
+body {
+  color: darkblue;
+  text-align: justify;
+  font-family: sans-serif;
+  font-size: 13px;
+}
+
+span.tip {
+  text-size: small;
+  color: grey;
+}
+
+a.button, a.button:hover, a.button:visited {
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid black;
+  text-decoration: none;
+  background-color: white;
+  border-radius: 5px;
+}
+a.button:hover {
+  background-color: lightblue;
+}
+
+a.tabButton, a.tabButton:hover, a.tabButton:visited {
+  margin-left: -10px;
+  padding-bottom: 0px;
+  border-radius: 0px;
+  font-size: larger;
+}
+a.tabButton:hover {
+  background-color: white;
+}
+
+div.tab {
+  padding:5px;
+  background-color: lightgrey;
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+table {
+  font-size: 13px;
+  text-align: center;
+}
+table.transitions {
+  border-collapse: collapse;
+  font-size: larger;
+}
+th {
+  font-weight: normal;
+  font-size: small;
+}
+
+#tabPane {
+  border: 1px solid black;
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  margin-bottom: 5px;
+}
+
+#machine {
+  line-height: 1.5;
+  background-color: lightgrey;
+  padding: 5px;
+  border: 1px solid black;
+  border-radius: 10px;
+}
+span.machineheader {
+  font-weight: bold;
+}
+span.machine_prop {
+  font-weight: bold;
+  font-family: monospaced;
+}
+span.quality_ok {
+  font-weight: bold;
+  font-size: larger;
+  color: green;
+}
+span.quality_nok {
+  font-weight: bold;
+  font-size: larger;
+  color: red;
+}
+pre.quality_errormsg {
+  font-size: small;
+  font-color: red;
+  background-color: orange;
+}
+
