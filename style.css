@@ -56,9 +56,9 @@ div.tab {
 table {
   font-size: 13px;
   text-align: center;
+  border-collapse: collapse;
 }
 table.transitions {
-  border-collapse: collapse;
   font-size: larger;
 }
 th {
@@ -114,5 +114,12 @@ span.conf_head {
 }
 span.conf_state {
   font-weight: bold;
+}
+span.conf_trans {
+  font-weight: bold;
+  color: green;
+}
+table.conf {
+  display: inline;
 }
 

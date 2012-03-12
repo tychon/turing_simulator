@@ -188,15 +188,34 @@ function updateInfoField() {
   if (machine.tape_count == 1) {
     sim.configurations.forEach(function(val) {
       t = val.tapes[0]
-      html += '<span class="conf">'
+      if (val.lastTrans) {
+        html += ' <span class="conf_trans">-('
+        html += val.lastTrans.index
+        html += ')&#062;</span>'
+      }
+      html += ' <span class="conf">'
       if (t.head_pos > 0) html += t.content.substring(0, t.head_pos)
       html += '<span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content.charAt(t.head_pos)+'</span>'
       if (t.head_pos != t.content.length-1) html += t.content.substr(t.head_pos+2)+'</span>'
-      html += '<br>\n'
+      html += '\n'
     })
   } else {
     sim.configurations.forEach(function(val) {
-      html += '<span style="margin-right:10px">'+JSON.stringify(val)+'</span><br>\n'
+      if (val.lastTrans) {
+        html += ' <span class="conf_trans">-('
+        html += val.lastTrans.index
+        html += ')&#062;</span>'
+      }
+      html += '<table border="1" class="conf"><tbody>'
+      val.tapes.forEach(function(t) {
+        html += '<tr><td style="text-align: right">'
+        if (t.head_pos > 0) html += t.content.substring(0, t.head_pos)
+        html += '</td><td><span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content.charAt(t.head_pos)+'</span></td><td style="text-align: left">'
+        if (t.head_pos != t.content.length-1) html += t.content.substr(t.head_pos+2)+'</span>'
+        html += '</td></tr>'
+      })
+      html += '</tbody></table>\n'
+      //html += '<span style="margin-right:10px">'+JSON.stringify(val)+'</span><br>\n'
     })
   }
   configs_field.innerHTML = html
