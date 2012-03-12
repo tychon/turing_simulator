@@ -32,6 +32,19 @@ a.tabButton:hover {
   background-color: white;
 }
 
+a.github_link, a.github_link:hover {
+  background-color: lightgreen;
+  border: 1px solid black;
+  border-radius: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: black;
+  text-decoration: none;
+}
+a.github_link:hover {
+  background-color: pink;
+}
+
 div.tab {
   padding:5px;
   background-color: lightgrey;
