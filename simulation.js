@@ -60,19 +60,36 @@ function sim_step(callback) {
     if (parallel) {
       sim.state = transition.dest
       var oldpos = calculateTapePositions()
+        , box_size = +document.getElementById('tape_size_slider').value
         , tape, newpos
       for (var i = 0; i < sim.tapes.length; i++) {
         tape = sim.tapes[i]
         tape.content = setCharAt(tape.content, tape.head_pos, transition.write[i])
         if (transition.move[i] == 'L') {
             if (tape.head_pos == 0) {
-              tape.content = machine.blank_symbol+tape.content
-              oldpos[i] -= +document.getElementById('tape_size_slider').value
+              tape.content = machine.blank_symbol + tape.content
+              oldpos[i] -= box_size
+            } else {
+              if (tape.head_pos == tape.content.length-1
+               && tape.content[tape.head_pos] == machine.blank_symbol
+               && tape.content.length > 1) {
+                // shorten tape if it ends with blanks
+                tape.content = tape.content.substring(0, tape.content.length-1)
+              }
+              tape.head_pos --
             }
-            else tape.head_pos --
           } else if (transition.move[i] == 'R') {
-            if (tape.head_pos == tape.content.length-1) tape.content = tape.content+machine.blank_symbol
-            tape.head_pos ++
+            if (tape.head_pos == 0
+             && tape.content[0] == machine.blank_symbol
+             && tape.content > 1) {
+              // shorten if it begins with blanks
+              tape.content = tape.content.substr(1)
+              oldpos[i] -= box_size
+            } else {
+              if (tape.head_pos == tape.content.length-1)
+                tape.content = tape.content + machine.blank_symbol
+              tape.head_pos ++
+            }
           }
       }
       moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
