@@ -36,6 +36,8 @@ function compile() {
   match = /\s*(\w+)/.exec(document.getElementById('final_state').value)
   machine.final_state = match? match[1] || 'qf' : 'qf'
   
+  machine.comment = document.getElementById('comment').value
+  
   // parse transitions
   var errors = document.getElementById('compiler_errors')
     , transitions = document.getElementById('transitions').value.split('\n')
@@ -97,7 +99,6 @@ function updateTMview() {
       + 'Initial state: <span class="machine_prop">'+machine.initial_state+'</span><br>\n'
       + 'Blank Symbol: <span class="machine_prop">'+machine.blank_symbol+'</span><br>\n'
       + 'Final state: <span class="machine_prop">'+machine.final_state+'</span><br>\n'
-  
   html += 'Turing table:<br><table border="1" class="transitions" style="margin-top:5px"><tr><th>#</th><th></th><th>origin</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>read '+(i+1)+'</th>'
   html += '<th></th><th>dest</th>'
@@ -113,7 +114,8 @@ function updateTMview() {
     t.move.forEach(function (val){html+= '<td>'+val+'</td>'})
     html += '</tr>\n'
   }
-  html += '</table><br>\n'
+  html += '</table>\n'
+  if (machine.comment && machine.comment != '') html += 'Comment: <p class="machine_comment">'+machine.comment+'</p>\n'
   
   html += '<span class="machineheader">Qualities:</span><br>\n'
   if (machine.deterministic == '') html += '<span class="quality_ok">deterministic</span><br>'

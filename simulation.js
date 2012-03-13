@@ -204,7 +204,7 @@ function updateInfoField() {
       if (val.lastTrans) {
         html += ' <span class="conf_trans">-('
         html += val.lastTrans.index
-        html += ')&#062;</span>'
+        html += ')&#062;</span> '
       }
       html += '<table border="1" class="conf"><tbody>'
       val.tapes.forEach(function(t) {

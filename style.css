@@ -88,6 +88,13 @@ span.machine_prop {
   font-weight: bold;
   font-family: monospaced;
 }
+p.machine_comment {
+  color: #050;
+  padding: 0px;
+  max-width: 300px;
+  font-size: small;
+  font-family: serif;
+}
 span.quality_ok {
   font-weight: bold;
   font-size: larger;
