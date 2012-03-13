@@ -183,7 +183,7 @@ function isDeterministic() {
         if (t.origin != state) continue
         if (! arrayEqu(read, t.read)) continue
         if (found) {
-          errorstr += 'Doubled transition (number '+(j+1)+'): '+JSON.stringify(t)+'\n'
+          errorstr += 'Transition '+(j+1)+' doubled: '+t.origin+' with '+arrayToString(t.read)+'\n'
         } else found = true;
       }
       if (!found) {
@@ -197,7 +197,7 @@ function isDeterministic() {
             move: autotrans.move
           })
         } else
-          errorstr += 'Missing transition: state="'+state+'" read="'+arrayToString(read)+'"\n'
+          errorstr += 'Missing transition: '+state+' with '+arrayToString(read)+'\n'
       }
       
       counter[0] ++

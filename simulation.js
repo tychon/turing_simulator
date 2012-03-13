@@ -53,7 +53,7 @@ function sim_step(callback) {
   
   var next = findNextTransition()
     , transition = next? next.transition : null
-    , total_time = document.getElementById('speed_slider').value
+    , total_time = +document.getElementById('speed_slider').value
     , parallel = document.getElementById('parallel_tape_processing').checked
   
   if (next) {
@@ -159,7 +159,7 @@ function sim_run() {
   disableGui()
   document.getElementById('runpause').innerHTML = 'PAUSE'
   sim_step(function() {
-    if (sim.info == 'ok') { setTimeout(function(){ sim_run() }, 500) }
+    if (sim.info == 'ok') { setTimeout(function(){ sim_run() }, +document.getElementById('speed_slider').value/2) }
     else {
       if (sim.info == 'pause') sim.info = 'ok'
       enableGui()

@@ -75,6 +75,10 @@ th {
 }
 
 #machine {
+  min-width: 300px;
+  max-width: 700px;
+  overflow: auto;
+  float: right;
   line-height: 1.5;
   background-color: lightgrey;
   padding: 5px;
@@ -106,7 +110,7 @@ span.quality_nok {
   color: red;
 }
 pre.quality_errormsg {
-  max-width: 300px;
+  word-wrap: break-word;
   font-size: small;
   font-color: red;
   background-color: orange;
