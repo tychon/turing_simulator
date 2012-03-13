@@ -67,24 +67,24 @@ function sim_step(callback) {
         tape.content = setCharAt(tape.content, tape.head_pos, transition.write[i])
         if (transition.move[i] == 'L') {
             if (tape.head_pos == 0) {
-              tape.content = machine.blank_symbol + tape.content
+              if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol) tape.content = machine.blank_symbol + tape.content
               oldpos[i] -= box_size
             } else {
-              if (tape.head_pos == tape.content.length-1
-               && tape.content[tape.head_pos] == machine.blank_symbol
-               && tape.content.length > 1) {
-                // shorten tape if it ends with blanks
-                tape.content = tape.content.substring(0, tape.content.length-1)
-              }
-              tape.head_pos --
+              alert(tape.head_pos + '' + tape.content.length)
+              if (tape.head_pos == tape.content.length-1 && tape.content[tape.head_pos] == machine.blank_symbol) {
+               // shorten tape if it ends with blanks
+               if (tape.content.length > 1) {
+                 tape.content = tape.content.substring(0, tape.content.length-1)
+                 tape.head_pos --
+               } else ; // tape is empty
+              } else tape.head_pos --
             }
           } else if (transition.move[i] == 'R') {
-            if (tape.head_pos == 0
-             && tape.content[0] == machine.blank_symbol
-             && tape.content > 1) {
-              // shorten if it begins with blanks
-              tape.content = tape.content.substr(1)
-              oldpos[i] -= box_size
+            if (tape.head_pos == 0 && tape.content[0] == machine.blank_symbol) {
+              // shorten tape if it begins with blanks
+              if (tape.content.length > 1) tape.content = tape.content.substr(1)
+              else ; // tape is empty
+              oldpos[i] += box_size
             } else {
               if (tape.head_pos == tape.content.length-1)
                 tape.content = tape.content + machine.blank_symbol
