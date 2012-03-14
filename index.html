@@ -173,10 +173,10 @@ function getElementsByClassName(classname, node)  {
         This TM ...<br>
         <input id="type_calculator" type="radio" name="type_group"  onclick="if(guiEnabled) descrChanged()" />calculates a partial function.<br>
         <span class="tip">(The TM halts for every input and the word the head is pointing to is the result.)</span><br>
-        <input id="type_decision_maker" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" checked />decides a language.<br>
+        <input id="type_decider" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" checked />decides a language.<br>
         <span class="tip">(The TM is a decider / a total Turing machine: Halts for every input with 0 or 1)</span><br>
         <input id="type_acceptor" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" />accepts a language.<br>
-        <span class="tip">(The TM halts with 1 or loops.)</span><br>
+        <span class="tip">(The TM halts or loops.)</span><br>
         Comment:<br>
         <textarea id="comment" rows="10", cols="60" onkeyup="if(guiEnabled) descrChanged()">
 This machine decides the language of words that consist of two exactly the same subwords.

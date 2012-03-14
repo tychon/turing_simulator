@@ -117,6 +117,22 @@ pre.quality_errormsg {
 }
 
 
+span.sim_accepted {
+  color: green;
+  font-size: large;
+}
+span.sim_rejected {
+  color: red;
+  font-size: large;
+}
+span.sim_undef_result {
+  color: orangered;
+  font-size: large;
+}
+span.sim_calculated {
+  color: green;
+  font-size: large;
+}
 
 span.conf {
 }

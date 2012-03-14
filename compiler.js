@@ -21,7 +21,7 @@ function compile() {
   machine.properties = []
   if (document.getElementById('offline').checked) machine.properties.push('offline')
   if (document.getElementById('type_calculator').checked) machine.properties.push('calculator')
-  if (document.getElementById('type_decision_maker').checked) machine.properties.push('decision maker')
+  if (document.getElementById('type_decider').checked) machine.properties.push('decider')
   if (document.getElementById('type_acceptor').checked) machine.properties.push('acceptor')
   
   match = /\s*(\d+)\s/.exec(document.getElementById('tape_count').value+' ')

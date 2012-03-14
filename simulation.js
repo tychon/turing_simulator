@@ -92,8 +92,18 @@ function sim_step(callback) {
           }
       }
       moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
-        if (sim.state == machine.final_state) sim.info = 'finished'
-        else if (sim.info != 'pause') sim.info = 'ok'
+        if (sim.state == machine.final_state) {
+          sim.info = 'finished'
+          if (machine.properties.indexOf('decider') != -1) {
+            if (sim.tapes[0].content[sim.tapes[0].head_pos] == '1') sim.infotext = '<span class="sim_accepted">word accepted</span>'
+            else if (sim.tapes[0].content[sim.tapes[0].head_pos] == '0') sim.infotext = '<span class="sim_rejected">word rejected</span>'
+            else sim.infotext = '<span class="sim_undef_result">This is not a decider!</span>'
+          } else if (machine.properties.indexOf('acceptor') != -1) {
+            sim.infotext = '<span class="sim_accepted">word accepted</span>'
+          } else if (machine.properties.indexOf('calculator') != -1) {
+            sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.substr(sim.tapes[0].head_pos)+'</span>'
+          }
+        } else if (sim.info != 'pause') sim.info = 'ok'
         var config = copyOfConfiguration()
         config.lastTrans = next
         sim.configurations.push(config)
