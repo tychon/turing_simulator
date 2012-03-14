@@ -70,7 +70,6 @@ function sim_step(callback) {
               if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol) tape.content = machine.blank_symbol + tape.content
               oldpos[i] -= box_size
             } else {
-              alert(tape.head_pos + '' + tape.content.length)
               if (tape.head_pos == tape.content.length-1 && tape.content[tape.head_pos] == machine.blank_symbol) {
                // shorten tape if it ends with blanks
                if (tape.content.length > 1) {
