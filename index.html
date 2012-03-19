@@ -26,17 +26,17 @@ function openDescription() {
   document.getElementById('test').style.display = 'none'
   
   document.getElementById('description_button').style.backgroundColor = 'lightblue'
-  document.getElementById('simulation_button').style.backgroundColor = 'lightgrey'
-  document.getElementById('test_button').style.backgroundColor = 'lightgrey'
+  document.getElementById('simulation_button').style.backgroundColor = 'white'
+  document.getElementById('test_button').style.backgroundColor = 'white'
 }
 function openSimulation() {
   document.getElementById('description').style.display = 'none'
   document.getElementById('simulation').style.display = 'block'
   document.getElementById('test').style.display = 'none'
   
-  document.getElementById('description_button').style.backgroundColor = 'lightgrey'
+  document.getElementById('description_button').style.backgroundColor = 'white'
   document.getElementById('simulation_button').style.backgroundColor = 'lightblue'
-  document.getElementById('test_button').style.backgroundColor = 'lightgrey'
+  document.getElementById('test_button').style.backgroundColor = 'white'
   
   resetSimulation();
 }
@@ -45,8 +45,8 @@ function openTest() {
   document.getElementById('simulation').style.display = 'none'
   document.getElementById('test').style.display = 'block'
   
-  document.getElementById('description_button').style.backgroundColor = 'lightgrey'
-  document.getElementById('simulation_button').style.backgroundColor = 'lightgrey'
+  document.getElementById('description_button').style.backgroundColor = 'white'
+  document.getElementById('simulation_button').style.backgroundColor = 'white'
   document.getElementById('test_button').style.backgroundColor = 'lightblue'
 }
 
@@ -197,8 +197,8 @@ This machine decides the language of words that consist of two exactly the same 
           <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
           <a id="runpause" href="javascript: if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run()" class="button">RUN</a>
           <a href="javascript:if(guiEnabled) sim_revert()" class="button">Revert last step</a><br>
-          Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="100" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
-          <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="0" max="50" value="30" step="2" /></span><br>
+          Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="50" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
+          <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="10" max="50" value="30" step="2" /></span><br>
           <span style="display:none"><input id="parallel_tape_processing" type="checkbox" checked> Parallel tape processing<br></span>
         </div>
         <div id="configurations" style="max-width: 500px; font-family: monospace"></div>
