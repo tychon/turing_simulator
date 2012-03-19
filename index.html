@@ -126,6 +126,7 @@ function getElementsByClassName(classname, node)  {
       <a id="simulation_button" href="javascript:if(guiEnabled) openSimulation()" class="button tabButton" style="background-color:lightblue">Simulation</a>
       <a id="test_button" href="javascript:if(guiEnabled) openTest()" class="button tabButton" style="border-top-right-radius:5px">Test</a>
       <a class="github_link" href="http://github.com/tychon/turing_simulator" style="float: right; text-align: right">This project on GitHub</a>
+      <span class="tip" style="float:right; text-align:right; margin-right:5px">The page layout is most beautiful with Chromium / Google Chrome</span>
     </div>
     <div id="machine"></div>
     <div id="tabPane" style="float:left">
@@ -195,7 +196,7 @@ This machine decides the language of words that consist of two exactly the same 
         <div>
           <span style="float:right">Status: <span id="sim_info" style="font-size:large"></span><br><span id="sim_info_text"></span></span>
           <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
-          <a id="runpause" href="javascript: if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run()" class="button">RUN</a>
+          <a id="runpause" href="javascript:if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run();" class="button">RUN</a>
           <a href="javascript:if(guiEnabled) sim_revert()" class="button">Revert last step</a><br>
           Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="50" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
           <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="10" max="50" value="30" step="2" /></span><br>

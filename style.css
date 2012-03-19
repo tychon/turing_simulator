@@ -109,6 +109,14 @@ span.quality_nok {
   font-size: larger;
   color: red;
 }
+a.hide_show_button, a.hide_show_button:hover {
+  font-size: small;
+  color: #555;
+  text-decoration: none;
+}
+a.hide_show_button:hover {
+  color: black;
+}
 pre.quality_errormsg {
   word-wrap: break-word;
   font-size: small;

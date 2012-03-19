@@ -119,7 +119,7 @@ function updateTMview() {
   
   html += '<span class="machineheader">Qualities:</span><br>\n'
   if (machine.deterministic == '') html += '<span class="quality_ok">deterministic</span><br>'
-  else html += '<span class="quality_nok">not deterministic</span> <pre class="quality_errormsg">'+machine.deterministic+'</pre><br>'
+  else html += '<span class="quality_nok">not deterministic</span> <br> Error message: <a href="javascript:if(this.innerHTML == \'(show)\') { document.getElementById(\'quality_errormsg\').style.display = \'none\'; this.innerHTML = \'(hide)\'; } else {document.getElementById(\'quality_errormsg\').style.display = \'block\'; this.innerHTML = \'(show)\'; } " class="hide_show_button">(show)</a> <pre id="quality_errormsg" class="quality_errormsg" style="display: none">'+machine.deterministic+'</pre><br>'
   
   document.getElementById('machine').innerHTML = html;
 }
