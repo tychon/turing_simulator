@@ -51,6 +51,15 @@ a.github_link:hover {
   background-color: pink;
 }
 
+pre.errormsg {
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid red;
+  color: red;
+  background-color: orange;
+  word-wrap: break-word;
+}
+
 /* ################################# */
 /* Layout */
 table.layout {
@@ -132,13 +141,6 @@ a.hide_show_button, a.hide_show_button:hover {
 }
 a.hide_show_button:hover {
   color: black;
-}
-pre.quality_errormsg {
-  border: 1px solid red;
-  word-wrap: break-word;
-  font-size: small;
-  color: red;
-  background-color: orange;
 }
 
 /* ################################# */

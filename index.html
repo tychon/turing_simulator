@@ -172,6 +172,7 @@ function showHide(button_id, field_id, display_mode) {
         </div>
         <!-- Transitions-->
         <span style="display: block; clear: both">Transitions:</span>
+        <span class="tip" style="margin-left: 0px">(A tuple only separated by spaces will be converted to valid tuple automatically.)</span><br>
         <textarea id="transitions" rows="10" cols="60" onkeyup="descrChanged()">
 (q0, 0) -> (q0, 0, R)
 (q0, 1) -> (q0, 1, R)
@@ -183,7 +184,7 @@ function showHide(button_id, field_id, display_mode) {
 (q2, 1) -> (q2, 1, L)
 (q2, _) -> (qf, _, R)
 </textarea><br>
-        <pre id="compiler_errors" style="color:red; background-color:orange; display: none"></pre>
+        <pre id="compiler_errors" class="errormsg" style="display: none"></pre>
         <input id="autocompl_determinism" type="checkbox" onclick="descrChanged()" /> All other transitions behave like transition number
           <input id="autocompl_number" type="text" size="2" disabled onkeyup="if(guiEnabled) descrChanged()" />.<br>
         <span id="autocompl_tip" class="tip" style="display:none">(Numbering for transition corresponds to order in the textarea above.<br>(Malformed transitions excluded!))<br></span>

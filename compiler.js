@@ -63,11 +63,13 @@ function compile() {
   
   // restrictions
   if (document.getElementById('offline').checked) machine.offline = true
+  else machine.offline = false
   if (document.getElementById('linear_bounded').checked) machine.linear_bounded = true
+  else machine.linear_bounded = false
   
   match = /\s*(\d+)\s/.exec(document.getElementById('tape_count').value+' ')
   machine.tape_count = match? parseInt(match[1], 10) || 1 : 1
-  if (machine.type = 'one tape') machine.tape_count = 1
+  if (machine.type == 'one tape') machine.tape_count = 1
   
   match = /\s*(\w+)\s/.exec(document.getElementById('initial_state').value+' ')
   machine.initial_state = match? match[1] || 'q0' : 'q0'
@@ -84,49 +86,71 @@ function compile() {
   // comment
   machine.comment = document.getElementById('comment').value
   
-  // parse transitions
+  // create regular expressions
+    // normal format
+  var regexpstr = '\\s*\\(\\s*(\\w+)\\s*'
+  for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*([^,\\(\\){}\\s]+)\\s*'
+  regexpstr += '\\)\\s*\\->\\s*\\(\\s*(\\w+)\\s*'
+  for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*([^,\\(\\){}\\s]+)\\s*'
+  if (machine.type == 'multi-tape') {
+    for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*([RLN])\\s*'
+  } else regexpstr += ',\\s*([RLN])\\s*'
+  regexpstr += '\\)'
+  var regexp_trans = new RegExp(regexpstr)
+    // space separated
+  regexpstr = '\\s*(\\w+)\\s+'
+  for (var j = 0; j < machine.tape_count; j++) regexpstr += '([^,\\(\\){}\\s]+)\\s+'
+  regexpstr += '(\\w+)\\s+'
+  for (var j = 0; j < machine.tape_count; j++) regexpstr += '([^,\\(\\){}\\s]+)\\s+'
+  if (machine.type == 'multi-tape') {
+    for (var j = 0; j < machine.tape_count; j++) regexpstr += '([RLN])\\s*'
+  } else regexpstr += '([RLN])\\s*'
+  var regexp_trans_space = new RegExp(regexpstr)
+  /// parse transitions
   var errors = document.getElementById('compiler_errors')
     , transitions = document.getElementById('transitions').value.split('\n')
   errors.innerHTML = ''
   machine.transitions = []
   for (var i = 0; i < transitions.length; i++) {
-    if (transitions[i].replace(/^\s+/, '').replace(/\s+$/, '').length == 0) continue;
-    var regexpstr = '\\s*\\(\\s*(\\w+)\\s*'
-    for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*(\\w)\\s*'
-    regexpstr += '\\)\\s*\\->\\s*\\(\\s*(\\w+)\\s*'
-    for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*(\\w)\\s*'
-    for (var j = 0; j < machine.tape_count; j++) regexpstr += ',\\s*([RLN])\\s*'
-    regexpstr += '\\)'
-    var groups = new RegExp(regexpstr).exec(transitions[i])
-    if (groups) {
-      var trans = {
-        origin: groups[1],
-        read: [],
-        dest: groups[2+machine.tape_count],
-        write: [],
-        move: []
+    if (transitions[i].replace(/^\s+/, '').replace(/\s+$/, '').length == 0)
+      // line is empty
+      continue;
+    
+    var groups = regexp_trans_space.exec(transitions[i])
+    if (!groups) {
+      groups = regexp_trans.exec(transitions[i])
+      if (!groups) {
+        errors.innerHTML += 'Transition '+(i+1)+' not valid: '+transitions[i]+'\n'
+        continue
       }
-      
-      if (trans.origin == machine.final_state) {
-        errors.innerHTML += 'Transition '+(i+1)+' not valid: Final state must not have any outgoing transitions.\n'
-        continue;
-      }
-      
-      for (var j = 2; j < 2+machine.tape_count; j++) trans.read.push(groups[j])
-      for (var j = 3+machine.tape_count; j < 3+2*machine.tape_count; j++) trans.write.push(groups[j])
-      for (var j = 3+2*machine.tape_count; j < 3+3*machine.tape_count; j++) trans.move.push(groups[j])
-      
-      if (machine.properties.indexOf('offline') != -1 && trans.move[0] != 'R') {
-        errors.innerHTML += 'Transition '+(i+1)+' has to move R on the first band: '+transitions[i]+'\n'
-        continue;
-      }
-      
-      machine.transitions.push(trans)
-    } else {
-      errors.innerHTML += 'Transition '+(i+1)+' not valid: '+transitions[i]+'\n'
     }
+    var trans = {
+      origin: groups[1],
+      read: [],
+      dest: groups[2+machine.tape_count],
+      write: [],
+      move: []
+    }
+        
+    if (trans.origin == machine.final_state) {
+      errors.innerHTML += 'Transition '+(i+1)+' not valid: Final state must not have any outgoing transitions.\n'
+      continue
+    }
+        
+    for (var j = 2; j < 2+machine.tape_count; j++) trans.read.push(groups[j])
+    for (var j = 3+machine.tape_count; j < 3+2*machine.tape_count; j++) trans.write.push(groups[j])
+    for (var j = 3+2*machine.tape_count; j < 3+3*machine.tape_count; j++) trans.move.push(groups[j])
+        
+    if (machine.offline && trans.move[0] != 'R') {
+      errors.innerHTML += 'Transition '+(i+1)+' has to move R on the first band: '+transitions[i]+'\n'
+      continue
+    }
+    
+    machine.transitions.push(trans)
   }
   document.getElementById('machine_json').innerHTML = JSON.stringify(machine)
+  if (document.getElementById('compiler_errors').innerHTML.length == 0) document.getElementById('compiler_errors').style.display = 'none'
+  else document.getElementById('compiler_errors').style.display = 'block'
   
   // alphabet and states
   machine.alphabet = extractMachineAlphabet()
@@ -174,8 +198,8 @@ function updateTMview() {
   html += '<span class="machineheader">Qualities:</span><br>\n'
   if (machine.deterministic == '') html += '<span class="quality_ok">deterministic</span><br>'
   else html += '<span class="quality_nok">not deterministic</span> <br> Error message: '
-             + '<a href="#" id="determinism_errormsg_showhide" onclick="showHide(\'determinism_errormsg_showhide\', \'quality_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
-             + '<pre id="quality_errormsg" class="quality_errormsg" style="display: none">'+machine.deterministic+'</pre>'
+             + '<a href="#" id="determinism_errormsg_showhide" onclick="showHide(\'determinism_errormsg_showhide\', \'determinism_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
+             + '<pre id="determinism_errormsg" class="errormsg" style="display: none">'+machine.deterministic+'</pre>'
   
   document.getElementById('machine').innerHTML = html;
 }
