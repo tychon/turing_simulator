@@ -6,8 +6,14 @@ body {
 }
 
 span.tip {
-  text-size: small;
+  margin-left: 20px;
+  font-size: small;
   color: grey;
+}
+
+table {
+  font-size: 13px;
+  border-collapse: collapse;
 }
 
 a.button, a.button:hover, a.button:visited {
@@ -45,38 +51,37 @@ a.github_link:hover {
   background-color: pink;
 }
 
-div.tab {
-  padding:5px;
-  background-color: lightgrey;
-  border-top-right-radius: 10px;
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-}
-
-table {
-  font-size: 13px;
-  text-align: center;
+/* ################################# */
+/* Layout */
+table.layout {
+  width: 100%;
+  margin-top: -1px;
+  margin-left: -1px;
+  text-align: left;
   border-collapse: collapse;
 }
-table.transitions {
-  font-size: larger;
+td.layout_tabs {
+  vertical-align: top;
 }
-th {
-  font-weight: normal;
-  font-size: small;
+td.layout_machine {
+  /*width: 300px;*/
+  vertical-align: top;
 }
 
-#tabPane {
+div.tab {
+  padding: 5px;
+  margin: 0px;
+  background-color: lightgrey;
   border: 1px solid black;
   border-top-right-radius: 10px;
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
-  margin-bottom: 5px;
 }
 
+/* ################################# */
+/* TM view */
+
 #machine {
-  min-width: 300px;
-  max-width: 700px;
   overflow: auto;
   float: right;
   line-height: 1.5;
@@ -85,6 +90,7 @@ th {
   border: 1px solid black;
   border-radius: 10px;
 }
+
 span.machineheader {
   font-weight: bold;
 }
@@ -92,10 +98,20 @@ span.machine_prop {
   font-weight: bold;
   font-family: monospaced;
 }
+
+table.transitions {
+  width: 100%;
+  margin-top: 5px;
+  text-align: center;
+}
+thead.transitions {
+  font-weight: normal;
+  font-size: small;
+}
+
 p.machine_comment {
   color: #050;
   padding: 0px;
-  max-width: 300px;
   font-size: small;
   font-family: serif;
 }
@@ -118,13 +134,26 @@ a.hide_show_button:hover {
   color: black;
 }
 pre.quality_errormsg {
+  border: 1px solid red;
   word-wrap: break-word;
   font-size: small;
-  font-color: red;
+  color: red;
   background-color: orange;
 }
 
+/* ################################# */
+/* Description of TM */
 
+div.descr_type, div.descr_restrictions, div.descr_states {
+  margin: 5px;
+  margin-top: 10px;
+  padding: 5px;
+  border: 1px solid black;
+  float: left;
+}
+
+/* ################################# */
+/* Simulation */
 span.sim_accepted {
   color: green;
   font-size: large;

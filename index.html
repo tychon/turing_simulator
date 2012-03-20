@@ -118,9 +118,20 @@ function getElementsByClassName(classname, node)  {
     return a;
 }
 
+function showHide(button_id, field_id, display_mode) {
+  if (document.getElementById(button_id).innerHTML == '(show)') {
+    document.getElementById(button_id).innerHTML = '(hide)'
+    document.getElementById(field_id).style.display = display_mode
+  } else {
+    document.getElementById(button_id).innerHTML = '(show)'
+    document.getElementById(field_id).style.display = 'none'
+  }
+}
+
     </script>
   </head>
   <body>
+    <!-- Buttons for tab pane -->
     <div>
       <a id="description_button" href="javascript:if(guiEnabled) openDescription()" class="button tabButton" style="margin-left:0px; border-top-left-radius:5px">Description</a>
       <a id="simulation_button" href="javascript:if(guiEnabled) openSimulation()" class="button tabButton" style="background-color:lightblue">Simulation</a>
@@ -128,20 +139,40 @@ function getElementsByClassName(classname, node)  {
       <a class="github_link" href="http://github.com/tychon/turing_simulator" style="float: right; text-align: right">This project on GitHub</a>
       <span class="tip" style="float:right; text-align:right; margin-right:5px">The page layout is most beautiful with Chromium / Google Chrome</span>
     </div>
-    <div id="machine"></div>
-    <div id="tabPane" style="float:left">
-      <div id="description" class="tab" style="display:none">
-        <a href="javascript:if(guiEnabled) compile()" class="button">compile</a>
+    <!-- Tab pane and machine div -->
+    <table class="layout"><tbody><tr><td class="layout_tabs">
+      <div id="description" class="tab" style="display: block">
+        <!-- compile -->
+        <a href="javascript: compile()" class="button">compile</a>
         <input id="componthefly" type="checkbox" checked style="margin-left:10px"/> Compile on the fly
         <span class="tip" style="margin-left:10px">(Result shown in the box on the right.)</span><br>
-        <table><tbody>
-          <tr><td>Number of tapes: <input id="tape_count" type="text" value="1" size="2" onkeyup="if(guiEnabled) descrChanged()" /></td>
-              <td>Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="if(guiEnabled) descrChanged()"/></td></tr>
-          <tr><td>Initial state: <input id="initial_state" type="text" value="q0" size="5" onkeyup="if(guiEnabled) descrChanged()"/></td>
-              <td>Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="if(guiEnabled) descrChanged()"/></td></tr>
-        </tbody></table>
-        <input id="offline" type="checkbox" onclick="if(guiEnabled) descrChanged()" /> Offline TM <span class="tip">(Move only R on the first tape.)</span><br>
-        <textarea id="transitions" rows="10" cols="70" onkeyup="if(guiEnabled) descrChanged()">
+        <!-- type -->
+        <div class="descr_type">
+          Type:<br>
+          <input id="one_tape" type="radio" name="type_group" onclick="descrChanged()" checked />one tape<br>
+          <input id="multitrack" type="radio" name="type_group" onclick="descrChanged()" />multi-track<br>
+          <input id="multitape" type="radio" name="type_group" onclick="descrChanged()" />multi-tape<br>
+          <span id="span_tape_count" style="visibility: hidden">Number of tapes: <input id="tape_count" type="text" value="2" size="2" onkeyup="descrChanged()" /></span>
+        </div>
+        <!-- restrictions -->
+        <div class="descr_restrictions">
+          Restrictions:<br>
+          <input id="linear_bounded" type="checkbox" onclick="descrChanged()" />linear bounded<br>
+          <span class="tip">The TM doesn't leave the input area.</span><br>
+          <span id="span_offline" style="visibility: hidden">
+            <input id="offline" type="checkbox" onclick="descrChanged()" />offline<br>
+            <span class="tip">(Move only R on the first tape.)</span>
+          </span>
+        </div>
+        <!-- states and blank symbol -->
+        <div class="descr_states">
+          Initial state: <input id="initial_state" type="text" value="q0" size="5" onkeyup="descrChanged()" /><br>
+          Final state: <input id="final_state" type="text" value="qf" size="5" onkeyup="descrChanged()" /><br>
+          Blank Symbol: <input id="blank_symbol" type="text" value="_" size="1" onkeyup="descrChanged()"/>
+        </div>
+        <!-- Transitions-->
+        <span style="display: block; clear: both">Transitions:</span>
+        <textarea id="transitions" rows="10" cols="60" onkeyup="descrChanged()">
 (q0, 0) -> (q0, 0, R)
 (q0, 1) -> (q0, 1, R)
 (q0, _) -> (q1, _, L)
@@ -152,27 +183,27 @@ function getElementsByClassName(classname, node)  {
 (q2, 1) -> (q2, 1, L)
 (q2, _) -> (qf, _, R)
 </textarea><br>
-        <pre id="compiler_errors" style="color:red; background-color:orange"></pre>
-        <input id="autocompl_determinism" type="checkbox" onclick="if(guiEnabled) descrChanged()" /> All other transitions behave like transition number
+        <pre id="compiler_errors" style="color:red; background-color:orange; display: none"></pre>
+        <input id="autocompl_determinism" type="checkbox" onclick="descrChanged()" /> All other transitions behave like transition number
           <input id="autocompl_number" type="text" size="2" disabled onkeyup="if(guiEnabled) descrChanged()" />.<br>
         <span id="autocompl_tip" class="tip" style="display:none">(Numbering for transition corresponds to order in the textarea above.<br>(Malformed transitions excluded!))<br></span>
-        <span style="display:none"><input id="sort_transitions" type="checkbox" /> Sort transitions<br></span>
+        <span style="display:none"><input id="sort_transitions" type="checkbox" />Sort transitions<br></span>
         <br>
         This TM ...<br>
-        <input id="type_calculator" type="radio" name="type_group"  onclick="if(guiEnabled) descrChanged()" checked />calculates a partial function.<br>
+        <input id="calculator" type="radio" name="purpose_group"  onclick="descrChanged()" checked />calculates a partial function.<br>
         <span class="tip">(The TM halts for every input and the word the head is pointing to is the result.)</span><br>
-        <input id="type_decider" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" />decides a language.<br>
+        <input id="decider" type="radio" name="purpose_group" onclick="descrChanged()" />decides a language.<br>
         <span class="tip">(The TM is a decider / a total Turing machine: Halts for every input with 0 or 1)</span><br>
-        <input id="type_acceptor" type="radio" name="type_group" onclick="if(guiEnabled) descrChanged()" />accepts a language.<br>
+        <input id="acceptor" type="radio" name="purpose_group" onclick="descrChanged()" />accepts a language.<br>
         <span class="tip">(The TM halts or loops.)</span><br>
         Comment:<br>
-        <textarea id="comment" rows="10", cols="60" onkeyup="if(guiEnabled) descrChanged()">
-The input is an binary number and the output a binary number increased by one.
+        <textarea id="comment" rows="10", cols="60" onkeyup="descrChanged()">
+The input is an binary number and the output this number increased by one.
 </textarea>
       </div>
       
       
-      <div id="simulation" class="tab" style="display:block">
+      <div id="simulation" class="tab" style="display: none">
         Input: <input id="sim_input" type="text" value="1001101" onkeyup="if(guiEnabled) resetSimulation()"/>
         <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
         <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
@@ -195,6 +226,8 @@ The input is an binary number and the output a binary number increased by one.
       
       <div id="test" class="tab" style="display:none">TODO</div>
     </div>
+    </td><td class="layout_machine"><div id="machine"></div></td></tr></tbody></table>
+    <!-- load / save -->
     <div style="float:right">
       <span class="tip">Parsed TM as JSON:</span><br><textarea id="machine_json" rows="10" cols="60" readonly></textarea>
     </div>

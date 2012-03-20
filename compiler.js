@@ -1,7 +1,40 @@
 /* Functions used to parse/compile the description
+
+// Description of the machine-object:
+machine = {
+  type : (string)           // one of these: "one tape", "multi-track", "multi-tape"
+  purpose : (string)        // one of these: "decider", acceptor", "calculator"
+  offline : (bool)
+  linear_bouded : (bool)
+  multi_character_symbols : (bool) // the alphabet contains symbols longer than one character //TODO
+  tape_count : (int)        // the number of tapes; -1 if the Tm is a one tape Tm
+  initial_state : (string)
+  final_state : (string)
+  blank_symbol : (string)
+  transitions : ([string])         // the transitions of this automaton:
+      // multi-tape: Q x alphabet^n x Q x alphabet^n x movement^n
+      // multi-track: Q x alphabet^n x Q x alphabet^n x movement (only one movement)
+  determinism : {
+    satisfied : (bool)  // true if the Tm is deterministic; equivalent to left_total && right_unique
+    left_total : (bool)
+    left_total_errormsg : (string)
+    right_unique : (bool)
+    right_unique_errormsg : (string)
+  }
+  description : (string) // a short text describing this Tm.
+}
  */
 
 function descrChanged() {
+  if (document.getElementById('one_tape').checked) {
+    document.getElementById('span_tape_count').style.visibility = 'hidden'
+    document.getElementById('span_offline').style.visibility = 'hidden'
+    document.getElementById('span_offline').checked = false
+  } else {
+    document.getElementById('span_tape_count').style.visibility = 'visible'
+    document.getElementById('span_offline').style.visibility = 'visible'
+  }
+  
   if (document.getElementById('autocompl_determinism').checked) {
     document.getElementById('autocompl_number').disabled = false
     document.getElementById('autocompl_tip').style.display = 'inline'
@@ -11,31 +44,44 @@ function descrChanged() {
     document.getElementById('autocompl_tip').style.display = 'none'
   }
   
-  if (document.getElementById('componthefly').checked)
-    compile();
+  if (document.getElementById('componthefly').checked) compile()
 }
+
 function compile() {
   machine = {}
   var match
   
-  machine.properties = []
-  if (document.getElementById('offline').checked) machine.properties.push('offline')
-  if (document.getElementById('type_calculator').checked) machine.properties.push('calculator')
-  if (document.getElementById('type_decider').checked) machine.properties.push('decider')
-  if (document.getElementById('type_acceptor').checked) machine.properties.push('acceptor')
+  // type
+  if (document.getElementById('one_tape').checked) machine.type = 'one tape'
+  else if (document.getElementById('multitrack').checked) machine.type = 'multi-track'
+  else if (document.getElementById('multitape').checked) machine.type = 'multi-tape'
+  
+  // purpose
+  if (document.getElementById('decider').checked) machine.purpose = 'decider'
+  else if (document.getElementById('acceptor').checked) machine.purpose = 'acceptor'
+  else if (document.getElementById('calculator').checked) machine.purpose = 'calculator'
+  
+  // restrictions
+  if (document.getElementById('offline').checked) machine.offline = true
+  if (document.getElementById('linear_bounded').checked) machine.linear_bounded = true
   
   match = /\s*(\d+)\s/.exec(document.getElementById('tape_count').value+' ')
   machine.tape_count = match? parseInt(match[1], 10) || 1 : 1
+  if (machine.type = 'one tape') machine.tape_count = 1
   
   match = /\s*(\w+)\s/.exec(document.getElementById('initial_state').value+' ')
-  machine.initial_state = match? match[1] || 'q1' : 'q1'
+  machine.initial_state = match? match[1] || 'q0' : 'q0'
   
-  match = /\s*(\w)/.exec(document.getElementById('blank_symbol').value)
-  machine.blank_symbol = match? match[1] || '_' : '_'
-  
-  match = /\s*(\w+)/.exec(document.getElementById('final_state').value)
+  match = /\s*(\w+)\s/.exec(document.getElementById('final_state').value+' ')
   machine.final_state = match? match[1] || 'qf' : 'qf'
   
+  // blank symbol
+  match = /\s*([^,\(\){}\s]+)\s/.exec(document.getElementById('blank_symbol').value+' ')
+  machine.blank_symbol = match? match[1] || '_' : '_'
+  if (machine.blank_symbol.length > 1) machine.multi_character_symbols = true
+  else machine.multi_character_symbols = false
+  
+  // comment
   machine.comment = document.getElementById('comment').value
   
   // parse transitions
@@ -82,9 +128,12 @@ function compile() {
   }
   document.getElementById('machine_json').innerHTML = JSON.stringify(machine)
   
+  // alphabet and states
   machine.alphabet = extractMachineAlphabet()
   machine.states = listMachineStates()
-  machine.deterministic = isDeterministic();
+  
+  // determinism
+  machine.deterministic = isDeterministic()
   
   // TODO sort?
   
@@ -92,19 +141,24 @@ function compile() {
 }
 function updateTMview() {
   var t, html = '<span class="machineheader">Turing machine:</span><br>'
-      + 'Properties: <span class="machine_prop">'+setToString(machine.properties)+'</span><br>\n'
-      + 'Number of tapes: <span class="machine_prop">'+machine.tape_count+'</span><br>\n'
-      + 'States: <span class="machine_prop">'+setToString(machine.states)+'</span><br>\n'
-      + 'Tape alphabet: <span class="machine_prop">'+setToString(machine.alphabet)+'</span><br>\n'
-      + 'Initial state: <span class="machine_prop">'+machine.initial_state+'</span><br>\n'
-      + 'Blank Symbol: <span class="machine_prop">'+machine.blank_symbol+'</span><br>\n'
-      + 'Final state: <span class="machine_prop">'+machine.final_state+'</span><br>\n'
-  html += 'Turing table:<br><table border="1" class="transitions" style="margin-top:5px"><tr><th>#</th><th></th><th>origin</th>'
+      + 'Type: <span class="machine_prop">'+machine.type+'</span><br>\n'
+  if (machine.type != 'one tape') html += 'Number of tapes: <span class="machine_prop">'+machine.tape_count+'</span><br>\n'
+  html += 'Purpose: <span class="machine_prop">'+machine.purpose+'</span><br>\n'
+        + 'Restrictions: <span class="machine_prop">{'
+  if (machine.linear_bounded) html += 'linear_bounded'
+  if (machine.offline) html += 'offline'
+  html += '}</span><br>\n'
+        + 'States: <span class="machine_prop">'+setToString(machine.states)+'</span><br>\n'
+        + 'Tape alphabet: <span class="machine_prop">'+setToString(machine.alphabet)+'</span><br>\n'
+        + 'Initial state: <span class="machine_prop">'+machine.initial_state+'</span><br>\n'
+        + 'Blank Symbol: <span class="machine_prop">'+machine.blank_symbol+'</span><br>\n'
+        + 'Final state: <span class="machine_prop">'+machine.final_state+'</span><br>\n'
+  html += 'Turing table:<br><table border="1" class="transitions"><thead class="transitions"><tr><th>#</th><th></th><th>origin</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>read '+(i+1)+'</th>'
   html += '<th></th><th>dest</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>write '+(i+1)+'</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>move '+(i+1)+'</th>'
-  html += '</tr>\n'
+  html += '</thead></tr>\n'
   for (var i = 0; i < machine.transitions.length; i++) {
     t = machine.transitions[i]
     html += '<tr><td>'+i+'</td><td></td><td>'+t.origin+'</td>'
@@ -119,7 +173,9 @@ function updateTMview() {
   
   html += '<span class="machineheader">Qualities:</span><br>\n'
   if (machine.deterministic == '') html += '<span class="quality_ok">deterministic</span><br>'
-  else html += '<span class="quality_nok">not deterministic</span> <br> Error message: <a href="javascript:if(this.innerHTML == \'(show)\') { document.getElementById(\'quality_errormsg\').style.display = \'none\'; this.innerHTML = \'(hide)\'; } else {document.getElementById(\'quality_errormsg\').style.display = \'block\'; this.innerHTML = \'(show)\'; } " class="hide_show_button">(show)</a> <pre id="quality_errormsg" class="quality_errormsg" style="display: none">'+machine.deterministic+'</pre><br>'
+  else html += '<span class="quality_nok">not deterministic</span> <br> Error message: '
+             + '<a href="#" id="determinism_errormsg_showhide" onclick="showHide(\'determinism_errormsg_showhide\', \'quality_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
+             + '<pre id="quality_errormsg" class="quality_errormsg" style="display: none">'+machine.deterministic+'</pre>'
   
   document.getElementById('machine').innerHTML = html;
 }
@@ -148,7 +204,7 @@ function extractMachineAlphabet() {
 /* Controls, if a transition exists for every alphabet-state-combination.
  * If the appropriate checkbox is checked, missing transitions will be added.
  * Returns a string containing the error message. If the string is '' the
- * TM is deterministic.
+ * Tm is deterministic.
  */
 function isDeterministic() {
   var autocomplete = false, autotrans, errorstr = '';
