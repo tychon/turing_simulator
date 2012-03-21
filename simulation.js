@@ -1,23 +1,45 @@
 /* Functions for simulation.
+sim = {
+  info : (string)
+    // "start"     the machine is ready to start
+    // "ok"        the machine reached a consistent state that is not 
+    // "running"   a step is performed
+    // "pause"     the running simulation is asked to pause and switch to "ok" / "finished"
+    // "finished"  when the tm reached qf
+    // "broken"    something went wrong, e.g. missing transitions
+  infotext : (string) // additional information
+  state : (string)    // state of the machine
+  steps : (int)       // number of steps since last reset
+  tapes : [{          // configuration
+    head_pos : (int)  // the current head_pos relateive to beginning of 'content'
+    content : ([string])  // the symbols on the tape
+    diff : (int)      // the current head_pos relative to the beginning
+    max_diff : (int)  // the maximum diff
+    min_diff : (int)  // the minimum diff
+  }]
+  configurations : [] // list of configurations passed in the current run
+}
  */
 
-//TODO
-  //match = /\s*(\w*)/.exec(document.getElementById('input').value)
-  //machine.tape = machine.input = match? match[1] || ''
-  //document.getElementById('input').value = machine.input
-  //machine.head_pos = 0
-
 function resetSimulation() {
-  if (! machine) return;
+  if (! machine) return // no compiled machine, should not occurr
+  
   sim = {
+    info: 'start'
     state: machine.initial_state,
+    steps: 0,
     tapes: [],
     configurations: []
   }
+  
+  // prepare tapes
   for (var i = 0; i < machine.tape_count; i++) {
     sim.tapes.push({
       content: machine.blank_symbol,
-      head_pos: 0
+      head_pos: 0,
+      diff: 0,
+      max_diff: 0,
+      min_diff: 0
     })
   }
   
