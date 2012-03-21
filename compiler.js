@@ -217,16 +217,33 @@ function updateTMview() {
   if (machine.determinism.satisfied) html += '<span class="det_ok">deterministic</span><br>'
   else html += '<span class="det_nok">not deterministic</span><br>'
     // right unique
-  if (machine.determinism.right_unique) html += '<span class="det_rel_ok">right-unique</span><br>'
-  else html += '<span class="det_rel_nok">not right-unique</span> <br>Error message: '
-             + '<a href="#" id="right_unique_errormsg_showhide" onclick="showHide(\'right_unique_errormsg_showhide\', \'right_unique_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
-             + '<pre id="right_unique_errormsg" class="errormsg" style="display: none">'+machine.determinism.right_unique_errormsg+'</pre>'
+  if (machine.determinism.right_unique)
+    html += '<span class="det_rel_ok">right-unique</span>'
+          + '<pre id="right_unique_errormsg" style="display: none"></pre><br>'
+  else {
+    html += '<span class="det_rel_nok">not right-unique</span> <br>Error message: '
+    if (document.getElementById('right_unique_errormsg').style.display == 'block') {
+      html += '<a href="#" id="right_unique_errormsg_showhide" onclick="showHide(\'right_unique_errormsg_showhide\', \'right_unique_errormsg\', \'block\'); return false;" class="hide_show_button">(hide)</a> '
+           + '<pre id="right_unique_errormsg" class="errormsg" style="display: block">'+machine.determinism.right_unique_errormsg+'</pre><br>'
+    } else {
+      html += '<a href="#" id="right_unique_errormsg_showhide" onclick="showHide(\'right_unique_errormsg_showhide\', \'right_unique_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
+            + '<pre id="right_unique_errormsg" class="errormsg" style="display: none">'+machine.determinism.right_unique_errormsg+'</pre><br>'
+    }
+  }
     // left total
-  if (machine.determinism.left_total) html += '<span class="det_rel_ok">left-total</span><br>'
-  else html += '<span class="det_rel_nok">not left-total</span> <br>Error message: '
-             + '<a href="#" id="left_total_errormsg_showhide" onclick="showHide(\'left_total_errormsg_showhide\', \'left_total_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
-             + '<pre id="left_total_errormsg" class="errormsg" style="display: none">'+machine.determinism.left_total_errormsg+'</pre>'
-  
+  if (machine.determinism.left_total)
+    html += '<span class="det_rel_ok">left-total</span>'
+          + '<pre id="left_total_errormsg" style="display: none"></pre>'
+  else {
+    html += '<span class="det_rel_nok">not left-total</span> <br>Error message: '
+    if (document.getElementById('left_total_errormsg').style.display == 'block') {
+      html += '<a href="#" id="left_total_errormsg_showhide" onclick="showHide(\'left_total_errormsg_showhide\', \'left_total_errormsg\', \'block\'); return false;" class="hide_show_button">(hide)</a> '
+            + '<pre id="left_total_errormsg" class="errormsg" style="display: block">'+machine.determinism.left_total_errormsg+'</pre>'
+    } else {
+      html += '<a href="#" id="left_total_errormsg_showhide" onclick="showHide(\'left_total_errormsg_showhide\', \'left_total_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
+            + '<pre id="left_total_errormsg" class="errormsg" style="display: none">'+machine.determinism.left_total_errormsg+'</pre>'
+    }
+  }
   document.getElementById('machine').innerHTML = html;
 }
 /* List the states of the machine as used in the transitions and given as initial_state and final_state.
@@ -253,25 +270,25 @@ function extractMachineAlphabet() {
   return alphabet.sort()
 }
 
-/* Controls, if a transition exists for every alphabet-state-combination.
+/* Checks, if a transition exists for every alphabet-state-combination.
  * If the appropriate checkbox is checked, missing transitions will be added.
- * Returns a string containing the error message. If the string is '' the
- * Tm is deterministic.
+ * Returns the object that has to be put into machine.determinism .
  */
-function isDeterministic() {
-  var autocomplete = false, autotrans, errorstr = '';
+function testForDeterminism() {
+  var autocomplete = false, autotrans
+    , leftt_errormsg = ''
+    , rightu_errormsg = ''
   if (document.getElementById('autocompl_determinism').checked) {
     autocomplete = true
     autotransnum = parseInt(document.getElementById('autocompl_number').value)-1
-    if (autotransnum >= 0 && autotransnum < machine.transitions.length)
+    if (autotransnum >= 0 && autotransnum < machine.transitions.length) {
       autotrans = machine.transitions[autotransnum]
-    else {
+    } else {
       document.getElementById('autocompl_number').value = ''
       autocomplete = false
     }
   }
   
-  // for every state
   machine.states.forEach(function (state) {
     if (state == machine.final_state) return
     
@@ -281,6 +298,7 @@ function isDeterministic() {
     
     // for every input symbol combination
     while (true) {
+      // convert counter into characters
       read = []
       for (var j = 0; j < counter.length; j++) read.push(machine.alphabet[counter[j]])
       
@@ -291,12 +309,11 @@ function isDeterministic() {
         if (t.origin != state) continue
         if (! arrayEqu(read, t.read)) continue
         if (found) {
-          errorstr += 'Transition '+(j+1)+' doubled: '+t.origin+' with '+arrayToString(t.read)+'\n'
+          rightu_errormsg += 'Trans. '+(j+1)+' doubled: '+t.origin+' with '+arrayToString(t.read)+'\n'
         } else found = true;
       }
       if (!found) {
         if (autocomplete) {
-          //TODO
           machine.transitions.push({
             origin: state,
             read: read.slice(),
@@ -305,7 +322,7 @@ function isDeterministic() {
             move: autotrans.move
           })
         } else
-          errorstr += 'Missing transition: '+state+' with '+arrayToString(read)+'\n'
+          leftt_errormsg += 'Missing trans.: '+state+' with '+arrayToString(read)+'\n'
       }
       
       counter[0] ++
@@ -313,13 +330,19 @@ function isDeterministic() {
         if (counter[j] == machine.alphabet.length) {
           counter[j] = 0
           if (j+1 < counter.length) counter[j+1] ++
-          else return;
+          else return // only returns from this anonymous function!
         }
         else break
       }
     }
   })
   
-  return errorstr
+  return {
+    satisfied: leftt_errormsg == '' && rightu_errormsg == '',
+    left_total: leftt_errormsg == '',
+    left_total_errormsg: leftt_errormsg,
+    right_unique: rightu_errormsg == '',
+    right_unique_errormsg: rightu_errormsg
+  }
 }
 

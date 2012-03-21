@@ -73,7 +73,7 @@ td.layout_tabs {
   vertical-align: top;
 }
 td.layout_machine {
-  /*width: 300px;*/
+  width: 300px;
   vertical-align: top;
 }
 
@@ -130,8 +130,8 @@ span.det_ok, span.det_nok, span.det_rel_ok, span.det_rel_nok {
 }
 span.det_ok { color: green; }
 span.det_nok { color: red; }
-span.det_rel_ok { color: blue; }
-span.det_rel_nok { color: orange; }
+span.det_rel_ok { color: darkgreen; }
+span.det_rel_nok { color: darkred; }
 
 a.hide_show_button, a.hide_show_button:hover {
   font-size: small;
