@@ -201,7 +201,7 @@ function updateTMview() {
   html += '</thead></tr>\n'
   for (var i = 0; i < machine.transitions.length; i++) {
     t = machine.transitions[i]
-    html += '<tr><td>'+i+'</td><td></td><td>'+t.origin+'</td>'
+    html += '<tr><td>'+(i+1)+'</td><td></td><td>'+t.origin+'</td>'
     t.read.forEach(function (val){html+= '<td>'+val+'</td>'})
     html += '<td></td><td>'+t.dest+'</td>'
     t.write.forEach(function (val){html+= '<td>'+val+'</td>'})

@@ -17,6 +17,7 @@ function initialize() {
   
   compile();
   resetSimulation();
+  openDescription();
 }
 
 function openDescription() {
@@ -134,7 +135,7 @@ function showHide(button_id, field_id, display_mode) {
     <!-- Buttons for tab pane -->
     <div>
       <a id="description_button" href="javascript:if(guiEnabled) openDescription()" class="button tabButton" style="margin-left:0px; border-top-left-radius:5px">Description</a>
-      <a id="simulation_button" href="javascript:if(guiEnabled) openSimulation()" class="button tabButton" style="background-color:lightblue">Simulation</a>
+      <a id="simulation_button" href="javascript:if(guiEnabled) openSimulation()" class="button tabButton">Simulation</a>
       <a id="test_button" href="javascript:if(guiEnabled) openTest()" class="button tabButton" style="border-top-right-radius:5px">Test</a>
       <a class="github_link" href="http://github.com/tychon/turing_simulator" style="float: right; text-align: right">This project on GitHub</a>
       <span class="tip" style="float:right; text-align:right; margin-right:5px">The page layout is most beautiful with Chromium / Google Chrome</span>
