@@ -124,16 +124,15 @@ p.machine_comment {
   font-size: small;
   font-family: serif;
 }
-span.quality_ok {
+span.det_ok, span.det_nok, span.det_rel_ok, span.det_rel_nok {
   font-weight: bold;
   font-size: larger;
-  color: green;
 }
-span.quality_nok {
-  font-weight: bold;
-  font-size: larger;
-  color: red;
-}
+span.det_ok { color: green; }
+span.det_nok { color: red; }
+span.det_rel_ok { color: blue; }
+span.det_rel_nok { color: orange; }
+
 a.hide_show_button, a.hide_show_button:hover {
   font-size: small;
   color: #555;

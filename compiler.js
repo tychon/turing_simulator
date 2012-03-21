@@ -5,23 +5,23 @@ machine = {
   type : (string)           // one of these: "one tape", "multi-track", "multi-tape"
   purpose : (string)        // one of these: "decider", acceptor", "calculator"
   offline : (bool)
-  linear_bouded : (bool)
+  linear_bouded : (bool)    // (important for simulation only)
   multi_character_symbols : (bool) // the alphabet contains symbols longer than one character //TODO
   tape_count : (int)        // the number of tapes; -1 if the Tm is a one tape Tm
   initial_state : (string)
   final_state : (string)
   blank_symbol : (string)
-  transitions : ([string])         // the transitions of this automaton:
+  transitions : ([string])  // the transitions of this automaton:
       // multi-tape: Q x alphabet^n x Q x alphabet^n x movement^n
-      // multi-track: Q x alphabet^n x Q x alphabet^n x movement (only one movement)
+      // multi-track: Q x alphabet^n x Q x alphabet^n x movement
   determinism : {
-    satisfied : (bool)  // true if the Tm is deterministic; equivalent to left_total && right_unique
+    satisfied : (bool)      // true if the Tm is deterministic; equivalent to left_total && right_unique
     left_total : (bool)
     left_total_errormsg : (string)
     right_unique : (bool)
     right_unique_errormsg : (string)
   }
-  description : (string) // a short text describing this Tm.
+  description : (string)    // a short text describing this Tm.
 }
  */
 
@@ -124,6 +124,7 @@ function compile() {
         continue
       }
     }
+    
     var trans = {
       origin: groups[1],
       read: [],
@@ -131,16 +132,25 @@ function compile() {
       write: [],
       move: []
     }
-        
+    
     if (trans.origin == machine.final_state) {
       errors.innerHTML += 'Transition '+(i+1)+' not valid: Final state must not have any outgoing transitions.\n'
       continue
     }
-        
-    for (var j = 2; j < 2+machine.tape_count; j++) trans.read.push(groups[j])
-    for (var j = 3+machine.tape_count; j < 3+2*machine.tape_count; j++) trans.write.push(groups[j])
+    
+    // read
+    for (var j = 2; j < 2+machine.tape_count; j++) {
+      trans.read.push(groups[j])
+      if (groups[j].length > 1) machine.multi_character_symbols = true
+    }
+    // wrtie
+    for (var j = 3+machine.tape_count; j < 3+2*machine.tape_count; j++) {
+      trans.write.push(groups[j])
+      if (groups[j].length > 1) machine.multi_character_symbols = true
+    }
+    // move
     for (var j = 3+2*machine.tape_count; j < 3+3*machine.tape_count; j++) trans.move.push(groups[j])
-        
+    
     if (machine.offline && trans.move[0] != 'R') {
       errors.innerHTML += 'Transition '+(i+1)+' has to move R on the first band: '+transitions[i]+'\n'
       continue
@@ -157,19 +167,24 @@ function compile() {
   machine.states = listMachineStates()
   
   // determinism
-  machine.deterministic = isDeterministic()
+  machine.determinism = testForDeterminism()
   
   // TODO sort?
   
   updateTMview()
 }
+
+/* Generate html and set it as innerHTML for Turing machine view.
+ */
 function updateTMview() {
+  // properties
   var t, html = '<span class="machineheader">Turing machine:</span><br>'
       + 'Type: <span class="machine_prop">'+machine.type+'</span><br>\n'
   if (machine.type != 'one tape') html += 'Number of tapes: <span class="machine_prop">'+machine.tape_count+'</span><br>\n'
   html += 'Purpose: <span class="machine_prop">'+machine.purpose+'</span><br>\n'
         + 'Restrictions: <span class="machine_prop">{'
   if (machine.linear_bounded) html += 'linear_bounded'
+  if (machine.linear_bounded && machine.offline) html += ', '
   if (machine.offline) html += 'offline'
   html += '}</span><br>\n'
         + 'States: <span class="machine_prop">'+setToString(machine.states)+'</span><br>\n'
@@ -177,6 +192,7 @@ function updateTMview() {
         + 'Initial state: <span class="machine_prop">'+machine.initial_state+'</span><br>\n'
         + 'Blank Symbol: <span class="machine_prop">'+machine.blank_symbol+'</span><br>\n'
         + 'Final state: <span class="machine_prop">'+machine.final_state+'</span><br>\n'
+  // transitions
   html += 'Turing table:<br><table border="1" class="transitions"><thead class="transitions"><tr><th>#</th><th></th><th>origin</th>'
   for (var i = 0; i < machine.tape_count; i++) html += '<th>read '+(i+1)+'</th>'
   html += '<th></th><th>dest</th>'
@@ -193,16 +209,28 @@ function updateTMview() {
     html += '</tr>\n'
   }
   html += '</table>\n'
+  // comment
   if (machine.comment && machine.comment != '') html += 'Comment: <p class="machine_comment">'+machine.comment+'</p>\n'
   
-  html += '<span class="machineheader">Qualities:</span><br>\n'
-  if (machine.deterministic == '') html += '<span class="quality_ok">deterministic</span><br>'
-  else html += '<span class="quality_nok">not deterministic</span> <br> Error message: '
-             + '<a href="#" id="determinism_errormsg_showhide" onclick="showHide(\'determinism_errormsg_showhide\', \'determinism_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
-             + '<pre id="determinism_errormsg" class="errormsg" style="display: none">'+machine.deterministic+'</pre>'
+  // determinism
+  html += '<span class="machineheader">Determinism:</span><br>\n'
+  if (machine.determinism.satisfied) html += '<span class="det_ok">deterministic</span><br>'
+  else html += '<span class="det_nok">not deterministic</span><br>'
+    // right unique
+  if (machine.determinism.right_unique) html += '<span class="det_rel_ok">right-unique</span><br>'
+  else html += '<span class="det_rel_nok">not right-unique</span> <br>Error message: '
+             + '<a href="#" id="right_unique_errormsg_showhide" onclick="showHide(\'right_unique_errormsg_showhide\', \'right_unique_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
+             + '<pre id="right_unique_errormsg" class="errormsg" style="display: none">'+machine.determinism.right_unique_errormsg+'</pre>'
+    // left total
+  if (machine.determinism.left_total) html += '<span class="det_rel_ok">left-total</span><br>'
+  else html += '<span class="det_rel_nok">not left-total</span> <br>Error message: '
+             + '<a href="#" id="left_total_errormsg_showhide" onclick="showHide(\'left_total_errormsg_showhide\', \'left_total_errormsg\', \'block\'); return false;" class="hide_show_button">(show)</a> '
+             + '<pre id="left_total_errormsg" class="errormsg" style="display: none">'+machine.determinism.left_total_errormsg+'</pre>'
   
   document.getElementById('machine').innerHTML = html;
 }
+/* List the states of the machine as used in the transitions and given as initial_state and final_state.
+ */
 function listMachineStates() {
   var states = [machine.initial_state]
   if (states.indexOf(machine.final_state) == -1) states.push(machine.final_state)
