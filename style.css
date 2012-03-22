@@ -179,6 +179,10 @@ span.sim_calculated {
   font-size: large;
 }
 
+#configurations {
+  clear: both;
+  overflow: auto;
+}
 span.conf {
 }
 span.conf_head {

@@ -1,5 +1,6 @@
 /* Functions for simulation.
 sim = {
+  input : ([string]) // input given by user with symbols not in the alphabet filtered out
   info : (string)
     // "start"     the machine is ready to start
     // "ok"        the machine reached a consistent state that is not 
@@ -18,6 +19,8 @@ sim = {
     max_diff : (int)  // the maximum diff
     min_diff : (int)  // the minimum diff
   }]
+  min_diff : (int) // this minimum head pos, used for checking for linear bounded restriction
+  max_diff : (int) // the maximum head pos, used for checking for linear bounded restriction
   configurations : [{
     info, infotext, state : (string)
     steps : (int)
@@ -42,6 +45,8 @@ function resetSimulation() {
     steps: 0,
     max_storage_occupancy: 1,
     tapes: [],
+    min_diff: 0,
+    max_diff: 0,
     configurations: []
   }
   
@@ -57,9 +62,11 @@ function resetSimulation() {
   }
   
   // load input
+  // TODO handle multi character symbols
   var input = document.getElementById('sim_input').value
   input = input.replace(new RegExp('[^'+machine.alphabet.join()+']', 'g'), '');
   if (input.length == '') input = machine.blank_symbol
+  sim.input = input
   sim.tapes[0].content = input
   //document.getElementById('sim_input').value = input
   
@@ -101,12 +108,16 @@ function sim_step(callback) {
       var oldpos = calculateTapePositions()
         , box_size = +document.getElementById('tape_size_slider').value
         , tape, newpos
-      for (var i = 0; i < sim.tapes.length; i++) {
+      sim.tapes.forEach(function(tape, i) {
+        //TODO handle type: multi-track
+        
         tape = sim.tapes[i]
         tape.content = setCharAt(tape.content, tape.head_pos, transition.write[i])
         if (transition.move[i] == 'L') {
           if (tape.head_pos == 0) {
-            if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol) tape.content = machine.blank_symbol + tape.content
+            if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol)
+              tape.content = machine.blank_symbol + tape.content
+            
             oldpos[i] -= box_size
           } else {
             if (tape.head_pos == tape.content.length-1 && tape.content[tape.head_pos] == machine.blank_symbol) {
@@ -135,7 +146,10 @@ function sim_step(callback) {
           tape.diff ++
           if (tape.diff > tape.max_diff) tape.max_diff = tape.diff
         }
-      }
+        
+        if (tape.min_diff < sim.min_diff) sim.min_diff = tape.min_diff
+        if (tape.max_diff > sim.max_diff) sim.max_diff = tape.max_diff
+      })
       moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
         var config = generateConfiguration(next)
         sim.configurations.push(config)
@@ -144,27 +158,34 @@ function sim_step(callback) {
         
         //TODO look for loops
         
-        if (sim.state == machine.final_state) {
-          sim.info = 'finished'
-          if (machine.purpose == 'decider') {
-            // halts with 1 or 0
-            if (sim.tapes[0].content[sim.tapes[0].head_pos] == '1') sim.infotext = '<span class="sim_accepted">word accepted</span>'
-            else if (sim.tapes[0].content[sim.tapes[0].head_pos] == '0') sim.infotext = '<span class="sim_rejected">word rejected</span>'
-            else sim.infotext = '<span class="sim_undef_result">This is not a decider!</span>'
-          } else if (machine.purpose == 'acceptor') {
-            // halt or loop
-            sim.infotext = '<span class="sim_accepted">word accepted</span>'
-          } else if (machine.purpose == 'calculator') {
-            // calculate a partial function
-            // everything right of the head is the result
-            sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.substr(sim.tapes[0].head_pos)+'</span>'
+        // check restriction: linear bounded
+        if (machine.linear_bounded && (sim.min_diff < -1 || sim.max_diff > sim.input.length)) {
+          // ! restriction violated
+          sim.info = 'broken'
+          sim.infotext = 'Restriction violated:<br><span class="sim_undef_result">Does NOT work linear bounded space!</span>'
+        } else { // restriction not violated
+          if (sim.state == machine.final_state) {
+            sim.info = 'finished'
+            if (machine.purpose == 'decider') {
+              // halts with 1 or 0
+              if (sim.tapes[0].content[sim.tapes[0].head_pos] == '1') sim.infotext = '<span class="sim_accepted">word accepted</span>'
+              else if (sim.tapes[0].content[sim.tapes[0].head_pos] == '0') sim.infotext = '<span class="sim_rejected">word rejected</span>'
+              else sim.infotext = '<span class="sim_undef_result">This is not a decider!</span>'
+            } else if (machine.purpose == 'acceptor') {
+              // halt or loop
+              sim.infotext = '<span class="sim_accepted">word accepted</span>'
+            } else if (machine.purpose == 'calculator') {
+              // calculate a partial function
+              // everything right of the head is the result
+              sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.substr(sim.tapes[0].head_pos)+'</span>'
+            }
+          } else if (sim.info != 'pause') {
+            sim.info = 'ok'
           }
-        } else if (sim.info != 'pause') {
-          sim.info = 'ok'
         }
         
         updateInfoField()
-        showTapes()
+        showTapes() // 
         if (callback) callback() // ! step finished !
       })
     } else {
@@ -341,6 +362,7 @@ function showTapes(pos) {
   }
   
   // fill tapes
+  // TODO handle multi-character symbols
   ypos = 0
   for (var i = 0; i < sim.tapes.length; i++) {
     tape = sim.tapes[i]
