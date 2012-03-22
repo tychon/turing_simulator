@@ -156,6 +156,12 @@ div.descr_type, div.descr_restrictions, div.descr_states {
 
 /* ################################# */
 /* Simulation */
+span.sim_infobox {
+  margin: 5px;
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 5px;
+}
 span.sim_accepted {
   color: green;
   font-size: large;

@@ -10,14 +10,25 @@ sim = {
   infotext : (string) // additional information
   state : (string)    // state of the machine
   steps : (int)       // number of steps since last reset
+  max_storage_occupancy : (int) = max( configurations.storage_occupancy )
   tapes : [{          // configuration
     head_pos : (int)  // the current head_pos relateive to beginning of 'content'
-    content : ([string])  // the symbols on the tape
+    content : (string)  // the symbols on the tape
     diff : (int)      // the current head_pos relative to the beginning
     max_diff : (int)  // the maximum diff
     min_diff : (int)  // the minimum diff
   }]
-  configurations : [] // list of configurations passed in the current run
+  configurations : [{
+    info, infotext, state : (string)
+    steps : (int)
+    tapes : [{
+      head_pos : (int)
+      content : (string)
+      max_storage_occupancy : (int) = max_diff-min_diff+1
+    }]
+    lastTrans : (object) // last transition or undefined if this is the first configuration
+    max_storage_occupancy : (int) = max ( tpes.storage_occupancy )
+  }] // list of configurations passed in the current run
 }
  */
 
@@ -25,9 +36,11 @@ function resetSimulation() {
   if (! machine) return // no compiled machine, should not occurr
   
   sim = {
-    info: 'start'
+    info: 'start',
+    infotext: '',
     state: machine.initial_state,
     steps: 0,
+    max_storage_occupancy: 1,
     tapes: [],
     configurations: []
   }
@@ -43,18 +56,19 @@ function resetSimulation() {
     })
   }
   
+  // load input
   var input = document.getElementById('sim_input').value
   input = input.replace(new RegExp('[^'+machine.alphabet.join()+']', 'g'), '');
   if (input.length == '') input = machine.blank_symbol
   sim.tapes[0].content = input
-  // document.getElementById('sim_input').value = input
+  //document.getElementById('sim_input').value = input
   
+  // update gui
   loadResizedCanvas();
   showTapes()
   
   sim.info = 'start'
-  var config = copyOfConfiguration()
-  sim.configurations.push(config)
+  sim.configurations.push(generateConfiguration())
   updateInfoField()
 }
 function loadResizedCanvas() {
@@ -70,6 +84,7 @@ function sim_step(callback) {
     if (callback) callback()
     return
   }
+  
   sim.info = 'running'
   updateInfoField()
   
@@ -79,6 +94,8 @@ function sim_step(callback) {
     , parallel = document.getElementById('parallel_tape_processing').checked
   
   if (next) {
+    sim.steps ++
+    
     if (parallel) {
       sim.state = transition.dest
       var oldpos = calculateTapePositions()
@@ -88,109 +105,80 @@ function sim_step(callback) {
         tape = sim.tapes[i]
         tape.content = setCharAt(tape.content, tape.head_pos, transition.write[i])
         if (transition.move[i] == 'L') {
-            if (tape.head_pos == 0) {
-              if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol) tape.content = machine.blank_symbol + tape.content
-              oldpos[i] -= box_size
-            } else {
-              if (tape.head_pos == tape.content.length-1 && tape.content[tape.head_pos] == machine.blank_symbol) {
-               // shorten tape if it ends with blanks
-               if (tape.content.length > 1) {
-                 tape.content = tape.content.substring(0, tape.content.length-1)
-                 tape.head_pos --
-               } else ; // tape is empty
-              } else tape.head_pos --
-            }
-          } else if (transition.move[i] == 'R') {
-            if (tape.head_pos == 0 && tape.content[0] == machine.blank_symbol) {
-              // shorten tape if it begins with blanks
-              if (tape.content.length > 1) tape.content = tape.content.substr(1)
-              else ; // tape is empty
-              oldpos[i] += box_size
-            } else {
-              if (tape.head_pos == tape.content.length-1)
-                tape.content = tape.content + machine.blank_symbol
-              tape.head_pos ++
-            }
+          if (tape.head_pos == 0) {
+            if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol) tape.content = machine.blank_symbol + tape.content
+            oldpos[i] -= box_size
+          } else {
+            if (tape.head_pos == tape.content.length-1 && tape.content[tape.head_pos] == machine.blank_symbol) {
+             // shorten tape if it ends with blanks
+             if (tape.content.length > 1) {
+               tape.content = tape.content.substring(0, tape.content.length-1)
+               tape.head_pos --
+             } else ; // tape is empty
+            } else tape.head_pos --
           }
-      }
-      moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
-        if (sim.state == machine.final_state) {
-          sim.info = 'finished'
-          if (machine.properties.indexOf('decider') != -1) {
-            if (sim.tapes[0].content[sim.tapes[0].head_pos] == '1') sim.infotext = '<span class="sim_accepted">word accepted</span>'
-            else if (sim.tapes[0].content[sim.tapes[0].head_pos] == '0') sim.infotext = '<span class="sim_rejected">word rejected</span>'
-            else sim.infotext = '<span class="sim_undef_result">This is not a decider!</span>'
-          } else if (machine.properties.indexOf('acceptor') != -1) {
-            sim.infotext = '<span class="sim_accepted">word accepted</span>'
-          } else if (machine.properties.indexOf('calculator') != -1) {
-            sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.substr(sim.tapes[0].head_pos)+'</span>'
-          }
-        } else if (sim.info != 'pause') sim.info = 'ok'
-        var config = copyOfConfiguration()
-        config.lastTrans = next
-        sim.configurations.push(config)
-        updateInfoField()
-        showTapes()
-        if (callback) callback()
-      })
-    } else {
-      //TODO support sequencely tape processing
-      /*
-      sim.state = transition.dest // state
-      processTape = function (index, transition) {
-        var positions, newpositions
-          , tape = sim.tapes[index]
-        tape.content = setCharAt(tape.content, tape.head_pos, transition.write[index])
-        showTapes()
-        setTimeout(function() {
-          oldpos = calculateTapePositions()
           
-          if (transition.move[index] == 'L') {
-            if (tape.head_pos == 0) {
-              tape.head_pos ++
-              oldpos = calculateTapePositions()
-              tape.content = machine.blank_symbol+tape.content
-              tape.head_pos --
-            }
-            else tape.head_pos --
-          } else if (transition.move[index] == 'R') {
-            if (tape.head_pos == tape.content.length-1) tape.content = tape.content+machine.blank_symbol
+          tape.diff --
+          if (tape.diff < tape.min_diff) tape.min_diff = tape.diff
+        } else if (transition.move[i] == 'R') {
+          if (tape.head_pos == 0 && tape.content[0] == machine.blank_symbol) {
+            // shorten tape if it begins with blanks
+            if (tape.content.length > 1) tape.content = tape.content.substr(1)
+            else ; // tape is empty
+            oldpos[i] += box_size
+          } else {
+            if (tape.head_pos == tape.content.length-1)
+              tape.content = tape.content + machine.blank_symbol
             tape.head_pos ++
           }
           
-          newpos = calculateTapePositions()
-          moveTapes(oldpos, newpos, 500, function() {
-            if (index+1 < sim.tapes.length) {
-              setTimeout(function(){processTape(index+1, transition)}, 500)
-            } else {
-              if (sim.state == machine.final_state) sim.info = 'finished'
-              else sim.info = 'ok'
-              
-              updateInfoField()
-              showTapes()
-              disableGui = false
-            }
-          })
-        }, total_time/2) //TODO
+          tape.diff ++
+          if (tape.diff > tape.max_diff) tape.max_diff = tape.diff
+        }
       }
-      processTape(0, transition)
-      */
+      moveTapes(oldpos, calculateTapePositions(), total_time/2, function() {
+        var config = generateConfiguration(next)
+        sim.configurations.push(config)
+        if (config.max_storage_occupancy > sim.max_storage_occupancy)
+          sim.max_storage_occupancy = config.max_storage_occupancy
+        
+        //TODO look for loops
+        
+        if (sim.state == machine.final_state) {
+          sim.info = 'finished'
+          if (machine.purpose == 'decider') {
+            // halts with 1 or 0
+            if (sim.tapes[0].content[sim.tapes[0].head_pos] == '1') sim.infotext = '<span class="sim_accepted">word accepted</span>'
+            else if (sim.tapes[0].content[sim.tapes[0].head_pos] == '0') sim.infotext = '<span class="sim_rejected">word rejected</span>'
+            else sim.infotext = '<span class="sim_undef_result">This is not a decider!</span>'
+          } else if (machine.purpose == 'acceptor') {
+            // halt or loop
+            sim.infotext = '<span class="sim_accepted">word accepted</span>'
+          } else if (machine.purpose == 'calculator') {
+            // calculate a partial function
+            // everything right of the head is the result
+            sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.substr(sim.tapes[0].head_pos)+'</span>'
+          }
+        } else if (sim.info != 'pause') {
+          sim.info = 'ok'
+        }
+        
+        updateInfoField()
+        showTapes()
+        if (callback) callback() // ! step finished !
+      })
+    } else {
+      // TODO? process tapes sequencially
     }
   } else {
     sim.info = 'broken'
     sim.infotext = 'No matching transition found'
     updateInfoField()
     showTapes()
-    if (callback) callback()
+    if (callback) callback() // ! step finished !
   }
 }
-function sim_speed() {
-  var speed = document.getElementById('speed_slider').value
-  if (speed < 50) return 50;
-  else return speed;
-}
 function sim_run() {
-  //TODO pause
   disableGui()
   document.getElementById('runpause').innerHTML = 'PAUSE'
   sim_step(function() {
@@ -203,19 +191,32 @@ function sim_run() {
   })
 }
 
+/* Returns the speed to use for simulation.
+ */
+function sim_speed() {
+  var speed = document.getElementById('speed_slider').value
+  if (speed < 50) return 50;
+  else return speed;
+}
+
 function updateInfoField() {
-  document.getElementById('sim_info').style.color = 'green'
+  // sim status
+  document.getElementById('sim_status').style.color = 'green'
   if (sim.info == 'start') {
-    document.getElementById('sim_info').innerHTML = 'ready to start'
+    document.getElementById('sim_status').innerHTML = 'ready to start'
   } else {
-    document.getElementById('sim_info').innerHTML = sim.info
+    document.getElementById('sim_status').innerHTML = sim.info
     if (sim.info == 'broken') {
-      document.getElementById('sim_info').style.color = 'red'
+      document.getElementById('sim_status').style.color = 'red'
     }
   }
   
   if (sim.infotext) document.getElementById('sim_info_text').innerHTML = sim.infotext
   else document.getElementById('sim_info_text').innerHTML = ''
+  
+  // short sim info 
+  document.getElementById('sim_info').innerHTML = 'Steps: <strong>'+sim.steps+'</strong><br>'
+      + 'Max storage occupancy: '+sim.max_storage_occupancy+'*'+machine.tape_count+' = <strong>'+(sim.max_storage_occupancy*machine.tape_count)+'</strong><br>'
   
   // configuration field
   var configs_field = document.getElementById('configurations')
@@ -255,21 +256,34 @@ function updateInfoField() {
   }
   configs_field.innerHTML = html
 }
-function copyOfConfiguration() {
+
+function generateConfiguration(lastTrans) {
   copy = {
     info: sim.info,
     infotext: sim.infotext,
     state: sim.state,
-    tapes: []
+    steps: sim.steps,
+    tapes: [],
+    lastTrans: lastTrans
   }
-  for (var i = 0; i < sim.tapes.length; i++) {
+  
+  // copy tapes
+  var occupancy, max_occupancy = 0
+  sim.tapes.forEach(function (tape) {
+    occupancy = tape.max_diff - tape.min_diff + 1
+    if (occupancy > max_occupancy) max_occupancy = occupancy
     copy.tapes.push({
-      content: sim.tapes[i].content.substr(0),
-      head_pos: sim.tapes[i].head_pos
+      content: tape.content.substr(0),
+      head_pos: tape.head_pos,
+      max_storage_occupancy: occupancy
     })
-  }
+  })
+  
+  copy.max_storage_occupancy = max_occupancy
   return copy
 }
+
+/* ================================= graphics */
 
 /* Calculates the positions in pixels for all tapes and
  * returns them as an array.
@@ -349,6 +363,7 @@ function showTapes(pos) {
   
   tape_ccontext.restore()
 }
+
 var SIM_MOTION_STEP_MS = 50 // time for one step
 /* Move the tapes fluently from pos1 to pos2 in the given time.
  * pos1 are the starting positions and pos2 the end positions as arrays.

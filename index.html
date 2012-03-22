@@ -214,7 +214,7 @@ The input is an binary number and the output this number increased by one.
           <canvas id="tape_canvas" width="500" height="100">Der Browser unterstuetzt kein HTML5 !</canvas>
         </div>
         <div>
-          <span style="float:right">Status: <span id="sim_info" style="font-size:large"></span><br><span id="sim_info_text"></span></span>
+          <span class="sim_infobox" style="float: right">Status: <span id="sim_status" style="font-size:large"></span><br><span id="sim_info_text"></span><br><span id="sim_info"></span></span>
           <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
           <a id="runpause" href="javascript:if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run();" class="button">RUN</a>
           <a href="javascript:if(guiEnabled) sim_revert()" class="button">Revert last step</a><br>
