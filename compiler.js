@@ -6,7 +6,7 @@ machine = {
   purpose : (string)        // one of these: "decider", acceptor", "calculator"
   offline : (bool)
   linear_bouded : (bool)    // (important for simulation only)
-  multi_character_symbols : (bool) // the alphabet contains symbols longer than one character //TODO
+  multi_character_symbols : (bool) // the alphabet contains symbols longer than one character
   tape_count : (int)        // the number of tapes; -1 if the Tm is a one tape Tm
   initial_state : (string)
   final_state : (string)
@@ -209,8 +209,9 @@ function updateTMview() {
     html += '</tr>\n'
   }
   html += '</table>\n'
+  if (machine.multi_character_symbols) html += 'Be careful: <span class="machine_prop">Multi-character symbols!</span><br>'
   // comment
-  if (machine.comment && machine.comment != '') html += 'Comment: <p class="machine_comment">'+machine.comment+'</p>\n'
+  if (machine.comment && machine.comment != '') html += '<br>Comment: <p class="machine_comment">'+machine.comment+'</p>\n'
   
   // determinism
   html += '<span class="machineheader">Determinism:</span><br>\n'

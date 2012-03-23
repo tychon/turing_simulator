@@ -14,7 +14,7 @@ sim = {
   max_storage_occupancy : (int) = max( configurations.storage_occupancy )
   tapes : [{          // configuration
     head_pos : (int)  // the current head_pos relateive to beginning of 'content'
-    content : (string)  // the symbols on the tape
+    content : ([string])  // the symbols on the tape
     diff : (int)      // the current head_pos relative to the beginning
     max_diff : (int)  // the maximum diff
     min_diff : (int)  // the minimum diff
@@ -26,7 +26,7 @@ sim = {
     steps : (int)
     tapes : [{
       head_pos : (int)
-      content : (string)
+      content : ([string])
       max_storage_occupancy : (int) = max_diff-min_diff+1
     }]
     lastTrans : (object) // last transition or undefined if this is the first configuration
@@ -62,13 +62,23 @@ function resetSimulation() {
   }
   
   // load input
-  // TODO handle multi character symbols
   var input = document.getElementById('sim_input').value
-  input = input.replace(new RegExp('[^'+machine.alphabet.join()+']', 'g'), '');
-  if (input.length == '') input = machine.blank_symbol
-  sim.input = input
-  sim.tapes[0].content = input
-  //document.getElementById('sim_input').value = input
+    , filtered = []
+  if (machine.multi_character_symbols) {
+    document.getElementById('multi_char_symbols_tip').style.display = 'inline'
+    var symbols = input.split(/\s+/)
+    symbols.forEach(function (sym) {
+      if (machine.alphabet.indexOf(sym) != -1) filtered.push(sym)
+    })
+  } else {
+    document.getElementById('multi_char_symbols_tip').style.display = 'none'
+    input = input.replace(new RegExp('[^'+machine.alphabet.join()+']', 'g'), '')
+    for (var i = 0; i < input.length; i++)
+      if (machine.alphabet.indexOf(input[i]) != -1) filtered.push(input[i])
+  }
+  if (filtered.length == '') filtered = [machine.blank_symbol]
+  sim.input = filtered
+  sim.tapes[0].content = filtered
   
   // update gui
   loadResizedCanvas();
@@ -112,7 +122,7 @@ function sim_step(callback) {
         //TODO handle type: multi-track
         
         tape = sim.tapes[i]
-        tape.content = setCharAt(tape.content, tape.head_pos, transition.write[i])
+        tape.content[tape.head_pos] = transition.write[i]
         if (transition.move[i] == 'L') {
           if (tape.head_pos == 0) {
             if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol)
@@ -123,7 +133,7 @@ function sim_step(callback) {
             if (tape.head_pos == tape.content.length-1 && tape.content[tape.head_pos] == machine.blank_symbol) {
              // shorten tape if it ends with blanks
              if (tape.content.length > 1) {
-               tape.content = tape.content.substring(0, tape.content.length-1)
+               tape.content = tape.content.pop()
                tape.head_pos --
              } else ; // tape is empty
             } else tape.head_pos --
@@ -134,7 +144,7 @@ function sim_step(callback) {
         } else if (transition.move[i] == 'R') {
           if (tape.head_pos == 0 && tape.content[0] == machine.blank_symbol) {
             // shorten tape if it begins with blanks
-            if (tape.content.length > 1) tape.content = tape.content.substr(1)
+            if (tape.content.length > 1) tape.content = tape.content.shift()
             else ; // tape is empty
             oldpos[i] += box_size
           } else {
@@ -162,7 +172,7 @@ function sim_step(callback) {
         if (machine.linear_bounded && (sim.min_diff < -1 || sim.max_diff > sim.input.length)) {
           // ! restriction violated
           sim.info = 'broken'
-          sim.infotext = 'Restriction violated:<br><span class="sim_undef_result">Does NOT work linear bounded space!</span>'
+          sim.infotext = 'Restriction violated:<br><span class="sim_undef_result">Doesn\'t work in linear bounded space!</span>'
         } else { // restriction not violated
           if (sim.state == machine.final_state) {
             sim.info = 'finished'
@@ -177,7 +187,7 @@ function sim_step(callback) {
             } else if (machine.purpose == 'calculator') {
               // calculate a partial function
               // everything right of the head is the result
-              sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.substr(sim.tapes[0].head_pos)+'</span>'
+              sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.slice(sim.tapes[0].head_pos).join(machine.multi_character_symbols? ' ' : '')+'</span>'
             }
           } else if (sim.info != 'pause') {
             sim.info = 'ok'
@@ -251,9 +261,9 @@ function updateInfoField() {
         html += ')&#062;</span>'
       }
       html += ' <span class="conf">'
-      if (t.head_pos > 0) html += t.content.substring(0, t.head_pos)
-      html += '<span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content.charAt(t.head_pos)+'</span>'
-      if (t.head_pos != t.content.length-1) html += t.content.substr(t.head_pos+2)+'</span>'
+      if (t.head_pos > 0) html += t.content.slice(0, t.head_pos)
+      html += '<span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content[t.head_pos]+'</span>'
+      if (t.head_pos != t.content.length-1) html += t.content.slice(t.head_pos+2).join(machine.multi_character_symbols? ' ' : '')+'</span>'
       html += '\n'
     })
   } else {
@@ -266,9 +276,9 @@ function updateInfoField() {
       html += '<table border="1" class="conf"><tbody>'
       val.tapes.forEach(function(t) {
         html += '<tr><td style="text-align: right">'
-        if (t.head_pos > 0) html += t.content.substring(0, t.head_pos)
-        html += '</td><td><span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content.charAt(t.head_pos)+'</span></td><td style="text-align: left">'
-        if (t.head_pos != t.content.length-1) html += t.content.substr(t.head_pos+2)+'</span>'
+        if (t.head_pos > 0) html += t.content.slice(0, t.head_pos).join(machine.multi_character_symbols? ' ' : '')
+        html += '</td><td><span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content[t.head_pos]+'</span></td><td style="text-align: left">'
+        if (t.head_pos != t.content.length-1) html += t.content.slice(t.head_pos+2).join(machine.multi_character_symbols? ' ' : '')+'</span>'
         html += '</td></tr>'
       })
       html += '</tbody></table>\n'
@@ -294,7 +304,7 @@ function generateConfiguration(lastTrans) {
     occupancy = tape.max_diff - tape.min_diff + 1
     if (occupancy > max_occupancy) max_occupancy = occupancy
     copy.tapes.push({
-      content: tape.content.substr(0),
+      content: tape.content.slice(),
       head_pos: tape.head_pos,
       max_storage_occupancy: occupancy
     })
@@ -327,11 +337,11 @@ var TAPE_DISTANCE = 4
 function showTapes(pos) {
   if (pos == undefined) pos = calculateTapePositions()
   
-  var FONT_SIZE = 16
+  var MAX_FONT_SIZE = 16
     , BOX_SIZE = +document.getElementById('tape_size_slider').value
     , width  = tape_canvas.width
     , height = tape_canvas.height
-    , text_dim, tape, shift, xpos, ypos
+    , text_dim, tape, shift, xpos, ypos, font_size
   
   tape_ccontext.save();
   
@@ -342,7 +352,7 @@ function showTapes(pos) {
   tape_ccontext.translate(width/2, BOX_SIZE)
   // initialise font
   tape_ccontext.textBaseline = "middle"
-  tape_ccontext.font = FONT_SIZE+"pt sans-serif"
+  tape_ccontext.font = MAX_FONT_SIZE+"pt sans-serif"
   
   // draw state
   text_dim = tape_ccontext.measureText(sim.state)
@@ -362,14 +372,19 @@ function showTapes(pos) {
   }
   
   // fill tapes
-  // TODO handle multi-character symbols
   ypos = 0
   for (var i = 0; i < sim.tapes.length; i++) {
     tape = sim.tapes[i]
     xpos = pos[i]
     for (var j = 0; j < tape.content.length; j++) {
       if (tape.content[j] != machine.blank_symbol) {
-        text_dim = tape_ccontext.measureText(tape.content[j])
+        font_size = MAX_FONT_SIZE
+        do {
+          tape_ccontext.font = font_size+"pt sans-serif"
+          text_dim = tape_ccontext.measureText(tape.content[j])
+          font_size --
+        } while (text_dim.width > BOX_SIZE-1)
+        
         tape_ccontext.fillText(tape.content[j],
                                xpos+BOX_SIZE/2 - text_dim.width/2 - 1,
                                ypos+BOX_SIZE/2)

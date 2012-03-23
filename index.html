@@ -158,7 +158,7 @@ function showHide(button_id, field_id, display_mode) {
         <!-- restrictions -->
         <div class="descr_restrictions">
           Restrictions:<br>
-          <input id="linear_bounded" type="checkbox" onclick="descrChanged()" />linear bounded<br>
+          <input id="linear_bounded" type="checkbox" onclick="descrChanged()" />linear bounded space<br>
           <span class="tip">The TM doesn't leave the input area.</span><br>
           <span id="span_offline" style="visibility: hidden">
             <input id="offline" type="checkbox" onclick="descrChanged()" />offline<br>
@@ -209,7 +209,7 @@ The input is an binary number and the output this number increased by one.
         Input: <input id="sim_input" type="text" value="1001101" onkeyup="if(guiEnabled) resetSimulation()"/>
         <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
         <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
-        <span class="tip">(Characters not in the alphabet are filtered out.)</span>
+        <div class="tip">(Characters not in the alphabet are filtered out.)<span id="multi_char_symbols_tip"><br>(The Symbols have to be separated by spaces!)</span></div>
         <div id="canvas_container" style="margin:5px; padding:5px">
           <canvas id="tape_canvas" width="500" height="100">Der Browser unterstuetzt kein HTML5 !</canvas>
         </div>
