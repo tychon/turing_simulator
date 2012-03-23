@@ -39,6 +39,9 @@ sim = {
 function resetSimulation() {
   if (! machine) return // no compiled machine, should not occurr
   
+  if (machine.multi_character_symbols) document.getElementById('multi_char_symbols_tip').style.display = 'inline'
+  else document.getElementById('multi_char_symbols_tip').style.display = 'none'
+  
   sim = {
     info: 'start',
     infotext: '',
@@ -64,20 +67,7 @@ function resetSimulation() {
   
   // load input
   var input = document.getElementById('sim_input').value
-    , filtered = []
-  if (machine.multi_character_symbols) {
-    document.getElementById('multi_char_symbols_tip').style.display = 'inline'
-    var symbols = input.split(/\s+/)
-    symbols.forEach(function (sym) {
-      if (machine.alphabet.indexOf(sym) != -1) filtered.push(sym)
-    })
-  } else {
-    document.getElementById('multi_char_symbols_tip').style.display = 'none'
-    input = input.replace(new RegExp('[^'+machine.alphabet.join('')+']', 'g'), '')
-    for (var i = 0; i < input.length; i++)
-      if (machine.alphabet.indexOf(input[i]) != -1) filtered.push(input[i])
-  }
-  if (filtered.length == '') filtered = [machine.blank_symbol]
+    , filtered = filterInput(input)
   sim.input = filtered
   sim.tapes[0].content = filtered
   
@@ -88,6 +78,25 @@ function resetSimulation() {
   sim.info = 'start'
   sim.configurations.push(generateConfiguration())
   updateInfoField()
+}
+/* Filters all characters out of the input that are not in the alphabet
+ * and returns the input as a string array.
+ */
+function filterInput(input) {
+  var filtered = []
+  if (machine.multi_character_symbols) {
+    var symbols = input.split(/\s+/)
+    symbols.forEach(function (sym) {
+      if (machine.alphabet.indexOf(sym) != -1) filtered.push(sym)
+    })
+  } else {
+    for (var i = 0; i < input.length; i++) {
+      if (machine.alphabet.indexOf(input[i]) != -1) filtered.push(input[i])
+    }
+  }
+  
+  if (filtered.length == '') filtered = [machine.blank_symbol]
+  return filtered
 }
 function loadResizedCanvas() {
   var BOX_SIZE = +document.getElementById('tape_size_slider').value

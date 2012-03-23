@@ -2,22 +2,24 @@
   <head>
     <title>Turing machine</title>
     <link rel="stylesheet" type="text/css" href="style.css">
+    <script language="JavaScript" src="universal.js"></script>
     <script language="JavaScript" src="compiler.js"></script>
     <script language="JavaScript" src="simulation.js"></script>
     <script language="JavaScript" src="test.js"></script>
     <script language="JavaScript">
 addEventListener("load", initialize, false);
 
-var tape_canvas, tape_ccontext, machine, sim = null
+var tape_canvas, tape_ccontext, machine, sim = null, test
   , guiEnabled = true
 function initialize() {
-  tape_ccontext = document.getElementById('tape_canvas').getContext('2d');
-  tape_canvas = tape_ccontext.canvas;
-  tape_ccontext.save();
+  tape_ccontext = document.getElementById('tape_canvas').getContext('2d')
+  tape_canvas = tape_ccontext.canvas
+  tape_ccontext.save()
   
-  compile();
-  resetSimulation();
-  openDescription();
+  compile()
+  resetSimulation()
+  resetTest()
+  openDescription()
 }
 
 function openDescription() {
@@ -39,7 +41,7 @@ function openSimulation() {
   document.getElementById('simulation_button').style.backgroundColor = 'lightblue'
   document.getElementById('test_button').style.backgroundColor = 'white'
   
-  resetSimulation();
+  resetSimulation()
 }
 function openTest() {
   document.getElementById('description').style.display = 'none'
@@ -49,46 +51,9 @@ function openTest() {
   document.getElementById('description_button').style.backgroundColor = 'white'
   document.getElementById('simulation_button').style.backgroundColor = 'white'
   document.getElementById('test_button').style.backgroundColor = 'lightblue'
+  
+  resetTest()
 }
-
-function setCharAt(str,index,chr) {
-	if(index > str.length-1) return str;
-	return str.substr(0,index) + chr + str.substr(index+1);
-}
-function setToString(array) {
-  var out = '{'
-  array.forEach(function (val) {out += val+', '})
-  return out.substring(0, out.length-2) + '}'
-}
-function arrayToString(array) {
-  var out = ''
-  array.forEach(function (val) {out += val+', '})
-  return out.substring(0, out.length-2)
-}
-function arrayEqu(a1, a2) {
-  if (a1.length != a2.length) return false
-  for (var i = 0; i < a1.length; a1 ++) if (a1[i] != a2[i]) return false
-  return true
-}
-function findNextTransition() {
-  var t, diff
-  for (var i = 0; i < machine.transitions.length; i++) {
-    t = machine.transitions[i]
-    if (t.origin != sim.state) continue
-    diff = false
-    for (var j = 0; j < t.read.length; j++) {
-      if (t.read[j] != sim.tapes[j].content[sim.tapes[j].head_pos]) {
-        diff = true
-        break
-      }
-    }
-    if (diff) continue
-    
-    return {index: i, transition: t}
-  }
-  return null
-}
-
 
 function disableGui(mode) {
   guiEnabled = false
@@ -151,7 +116,7 @@ function showHide(button_id, field_id, display_mode) {
         <div class="descr_type">
           Type:<br>
           <input id="one_tape" type="radio" name="type_group" onclick="descrChanged()" checked />one tape<br>
-          <input id="multitrack" type="radio" name="type_group" onclick="descrChanged()" />multi-track<br>
+          <span style="display: none"><input id="multitrack" type="radio" name="type_group" onclick="descrChanged()" />multi-track<br></span>
           <input id="multitape" type="radio" name="type_group" onclick="descrChanged()" />multi-tape<br>
           <span id="span_tape_count" style="visibility: hidden">Number of tapes: <input id="tape_count" type="text" value="2" size="2" onkeyup="descrChanged()" /></span>
         </div>
@@ -206,7 +171,7 @@ The input is an binary number and the output this number increased by one.
       
       
       <div id="simulation" class="tab" style="display: none">
-        Input: <input id="sim_input" type="text" value="1001101" onkeyup="if(guiEnabled) resetSimulation()"/>
+        Input: <input id="sim_input" type="text" value="1001101" onkeyup="if(guiEnabled) resetSimulation()" />
         <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
         <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
         <div class="tip">(Characters not in the alphabet are filtered out.)<span id="multi_char_symbols_tip"><br>(The Symbols have to be separated by spaces!)</span></div>
@@ -226,7 +191,17 @@ The input is an binary number and the output this number increased by one.
       </div>
       
       
-      <div id="test" class="tab" style="display:none">TODO</div>
+      <div id="test" class="tab" style="display:none">
+        <div class="test_infobox">
+          Number of words: <strong id="test_num_of_words">?</strong><br>
+          <div id="test_info"></div>
+        </div>
+        Word length: <input id="test_input" type="text" onkeyup="if(guiEnabled) resetTest()" size="3" value="3" /> symbols.<br>
+        <input id="test_break_checkbox" type="checkbox" onclick="if(guiEnabled) resetTest()" checked/>Break simulation after <input id="test_break_num" type="text" size="4" onkeyup="if(guiEnabled) resetTest()"> steps and assume that the word is rejected.<br>
+        <a href="javascript:if(guiEnabled) startTest()" class="button" >START</a> <span class="tip">(BE CAREFUL: You can't stop a running test.)</span>
+        <div id="test_result"></div>
+        <div style="clear: both"><!-- block float--></div>
+      </div>
     </div>
     </td><td class="layout_machine"><div id="machine"></div></td></tr></tbody></table>
     <!-- load / save -->

@@ -17,8 +17,9 @@ table {
 }
 
 a.button, a.button:hover, a.button:visited {
+  display: inline-block;
+  margin: 0px;
   padding: 5px;
-  margin: 5px;
   border: 1px solid black;
   text-decoration: none;
   background-color: white;
@@ -31,6 +32,7 @@ a.button:hover {
 a.tabButton, a.tabButton:hover, a.tabButton:visited {
   margin-left: -10px;
   padding-bottom: 0px;
+  padding-right: 10px;
   border-radius: 0px;
   font-size: larger;
 }
@@ -199,3 +201,12 @@ table.conf {
   display: inline;
 }
 
+/* ################################# */
+/* Test */
+div.test_infobox {
+  float: right;
+  margin: 5px;
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 5px;
+}
