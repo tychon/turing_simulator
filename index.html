@@ -27,19 +27,11 @@ function openDescription() {
   document.getElementById('description').style.display = 'block'
   document.getElementById('simulation').style.display = 'none'
   document.getElementById('test').style.display = 'none'
-  
-  document.getElementById('description_button').style.backgroundColor = 'lightblue'
-  document.getElementById('simulation_button').style.backgroundColor = 'white'
-  document.getElementById('test_button').style.backgroundColor = 'white'
 }
 function openSimulation() {
   document.getElementById('description').style.display = 'none'
   document.getElementById('simulation').style.display = 'block'
   document.getElementById('test').style.display = 'none'
-  
-  document.getElementById('description_button').style.backgroundColor = 'white'
-  document.getElementById('simulation_button').style.backgroundColor = 'lightblue'
-  document.getElementById('test_button').style.backgroundColor = 'white'
   
   resetSimulation()
 }
@@ -47,10 +39,6 @@ function openTest() {
   document.getElementById('description').style.display = 'none'
   document.getElementById('simulation').style.display = 'none'
   document.getElementById('test').style.display = 'block'
-  
-  document.getElementById('description_button').style.backgroundColor = 'white'
-  document.getElementById('simulation_button').style.backgroundColor = 'white'
-  document.getElementById('test_button').style.backgroundColor = 'lightblue'
   
   resetTest()
 }
@@ -171,6 +159,7 @@ The input is an binary number and the output this number increased by one.
       
       
       <div id="simulation" class="tab" style="display: none">
+        <span class="tip">(Every input resets the simulation!)</span><br>
         Input: <input id="sim_input" type="text" value="1001101" onkeyup="if(guiEnabled) resetSimulation()" />
         <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
         <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
@@ -182,7 +171,7 @@ The input is an binary number and the output this number increased by one.
           <span class="sim_infobox" style="float: right">Status: <span id="sim_status" style="font-size:large"></span><br><span id="sim_info_text"></span><br><span id="sim_info"></span></span>
           <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
           <a id="runpause" href="javascript:if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run();" class="button">RUN</a>
-          <a href="javascript:if(guiEnabled) sim_revert()" class="button">Revert last step</a><br>
+          <a href="javascript:if(guiEnabled) sim_revert()" class="button" style="display: none">Revert last step</a><br>
           Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="50" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
           <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="10" max="50" value="30" step="2" /></span><br>
           <span style="display:none"><input id="parallel_tape_processing" type="checkbox" checked> Parallel tape processing<br></span>
@@ -192,15 +181,18 @@ The input is an binary number and the output this number increased by one.
       
       
       <div id="test" class="tab" style="display:none">
+        <span class="tip">(Every input resets the test!)</span><br>
         <div class="test_infobox">
+          Word length: <strong id="test_word_length_mirror">?</strong><br>
           Number of words: <strong id="test_num_of_words">?</strong><br>
+          Break sim after <strong id="test_break_mirror">?</strong> steps<br>
           <div id="test_info"></div>
         </div>
-        Word length: <input id="test_input" type="text" onkeyup="if(guiEnabled) resetTest()" size="3" value="3" /> symbols.<br>
-        <input id="test_break_checkbox" type="checkbox" onclick="if(guiEnabled) resetTest()" checked/>Break simulation after <input id="test_break_num" type="text" size="4" onkeyup="if(guiEnabled) resetTest()"> steps and assume that the word is rejected.<br>
-        <a href="javascript:if(guiEnabled) startTest()" class="button" >START</a> <span class="tip">(BE CAREFUL: You can't stop a running test.)</span>
+        Word length: <span class="tip" style="margin-left: 0px">0 &lt;</span> <input id="test_word_length" type="text" onkeyup="if(guiEnabled) resetTest()" size="3" value="3" /> <span class="tip" style="margin-left: 0px">&lt; 31</span> symbols.<br>
+        <input id="test_break_checkbox" type="checkbox" onclick="if(guiEnabled) resetTest()" checked style="display:none"/>Break simulation after <input id="test_break_num" type="text" size="4" onkeyup="if(guiEnabled) resetTest()" value="500"> steps and assume that the word is rejected.<br>
+        <a href="javascript:if(guiEnabled) { resetTest(); startTest() }" class="button" >START</a> <span class="tip">(BE CAREFUL: You can't stop a running test.)</span>
+        <div style="clear: both"><!-- block floating --></div>
         <div id="test_result"></div>
-        <div style="clear: both"><!-- block float--></div>
       </div>
     </div>
     </td><td class="layout_machine"><div id="machine"></div></td></tr></tbody></table>

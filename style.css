@@ -37,7 +37,7 @@ a.tabButton, a.tabButton:hover, a.tabButton:visited {
   font-size: larger;
 }
 a.tabButton:hover {
-  background-color: white;
+  background-color: lightblue;
 }
 
 a.github_link, a.github_link:hover {
@@ -209,4 +209,9 @@ div.test_infobox {
   border: 1px solid black;
   border-radius: 5px;
   padding: 5px;
+}
+
+table.test {
+  margin: 10px;
+  text-align: right;
 }
