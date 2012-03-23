@@ -7,6 +7,7 @@ sim = {
     // "running"   a step is performed
     // "pause"     the running simulation is asked to pause and switch to "ok" / "finished"
     // "finished"  when the tm reached qf
+    // "loop"      if the simulator found a loop, no more steps required
     // "broken"    something went wrong, e.g. missing transitions
   infotext : (string) // additional information
   state : (string)    // state of the machine
@@ -72,7 +73,7 @@ function resetSimulation() {
     })
   } else {
     document.getElementById('multi_char_symbols_tip').style.display = 'none'
-    input = input.replace(new RegExp('[^'+machine.alphabet.join()+']', 'g'), '')
+    input = input.replace(new RegExp('[^'+machine.alphabet.join('')+']', 'g'), '')
     for (var i = 0; i < input.length; i++)
       if (machine.alphabet.indexOf(input[i]) != -1) filtered.push(input[i])
   }
@@ -121,19 +122,25 @@ function sim_step(callback) {
       sim.tapes.forEach(function(tape, i) {
         //TODO handle type: multi-track
         
+        // INFO:
+        // shift: remove first element
+        // unshift: add elements in the beginning
+        // pop: remove last element
+        // push: append elements at the end
+        
         tape = sim.tapes[i]
         tape.content[tape.head_pos] = transition.write[i]
         if (transition.move[i] == 'L') {
           if (tape.head_pos == 0) {
             if (tape.content.length > 1 || tape.content[0] != machine.blank_symbol)
-              tape.content = machine.blank_symbol + tape.content
+              tape.content.unshift(machine.blank_symbol)
             
             oldpos[i] -= box_size
           } else {
             if (tape.head_pos == tape.content.length-1 && tape.content[tape.head_pos] == machine.blank_symbol) {
              // shorten tape if it ends with blanks
              if (tape.content.length > 1) {
-               tape.content = tape.content.pop()
+               tape.content.pop()
                tape.head_pos --
              } else ; // tape is empty
             } else tape.head_pos --
@@ -144,12 +151,12 @@ function sim_step(callback) {
         } else if (transition.move[i] == 'R') {
           if (tape.head_pos == 0 && tape.content[0] == machine.blank_symbol) {
             // shorten tape if it begins with blanks
-            if (tape.content.length > 1) tape.content = tape.content.shift()
+            if (tape.content.length > 1) tape.content.shift()
             else ; // tape is empty
             oldpos[i] += box_size
           } else {
             if (tape.head_pos == tape.content.length-1)
-              tape.content = tape.content + machine.blank_symbol
+              tape.content.push(machine.blank_symbol)
             tape.head_pos ++
           }
           
@@ -166,31 +173,43 @@ function sim_step(callback) {
         if (config.max_storage_occupancy > sim.max_storage_occupancy)
           sim.max_storage_occupancy = config.max_storage_occupancy
         
-        //TODO look for loops
-        
-        // check restriction: linear bounded
-        if (machine.linear_bounded && (sim.min_diff < -1 || sim.max_diff > sim.input.length)) {
-          // ! restriction violated
-          sim.info = 'broken'
-          sim.infotext = 'Restriction violated:<br><span class="sim_undef_result">Doesn\'t work in linear bounded space!</span>'
-        } else { // restriction not violated
-          if (sim.state == machine.final_state) {
-            sim.info = 'finished'
-            if (machine.purpose == 'decider') {
-              // halts with 1 or 0
-              if (sim.tapes[0].content[sim.tapes[0].head_pos] == '1') sim.infotext = '<span class="sim_accepted">word accepted</span>'
-              else if (sim.tapes[0].content[sim.tapes[0].head_pos] == '0') sim.infotext = '<span class="sim_rejected">word rejected</span>'
-              else sim.infotext = '<span class="sim_undef_result">This is not a decider!</span>'
-            } else if (machine.purpose == 'acceptor') {
-              // halt or loop
-              sim.infotext = '<span class="sim_accepted">word accepted</span>'
-            } else if (machine.purpose == 'calculator') {
-              // calculate a partial function
-              // everything right of the head is the result
-              sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.slice(sim.tapes[0].head_pos).join(machine.multi_character_symbols? ' ' : '')+'</span>'
+        // look for loops
+        var loopIndex = checkForLoop()
+        if (loopIndex >= 0) {
+          // loop found
+          sim.info = 'loop'
+          if (machine.purpose == 'decider') {
+            sim.infotext = '<span class="sim_undef_result; font-size: small">A decider must not loop!</span>'
+          } else if (machine.purpose == 'acceptor') {
+            sim.infotext = '<span class="sim_rejected">word rejected</span>'
+          } else if (machine.purpose == 'calculator') {
+            sim.infotext = '<span class="sim_undef_result; font-size: small">A calculator must not loop!</span>'
+          }
+        } else {
+          // check restriction: linear bounded
+          if (machine.linear_bounded && (sim.min_diff < -1 || sim.max_diff > sim.input.length)) {
+            // ! restriction violated
+            sim.info = 'broken'
+            sim.infotext = 'Restriction violated:<br><span class="sim_undef_result; font-size: small">Doesn\'t work in linear bounded space!</span>'
+          } else { // restriction not violated
+            if (sim.state == machine.final_state) {
+              sim.info = 'finished'
+              if (machine.purpose == 'decider') {
+                // halts with 1 or 0
+                if (sim.tapes[0].content[sim.tapes[0].head_pos] == '1') sim.infotext = '<span class="sim_accepted">word accepted</span>'
+                else if (sim.tapes[0].content[sim.tapes[0].head_pos] == '0') sim.infotext = '<span class="sim_rejected">word rejected</span>'
+                else sim.infotext = '<span class="sim_undef_result; font-size: small">A decider must halt with 1 or 0</span>'
+              } else if (machine.purpose == 'acceptor') {
+                // halt or loop
+                sim.infotext = '<span class="sim_accepted">word accepted</span>'
+              } else if (machine.purpose == 'calculator') {
+                // calculate a partial function
+                // everything right of the head is the result
+                sim.infotext = 'result: <span class="sim_calculated">'+sim.tapes[0].content.slice(sim.tapes[0].head_pos).join(machine.multi_character_symbols? ' ' : '')+'</span>'
+              }
+            } else if (sim.info != 'pause') {
+              sim.info = 'ok'
             }
-          } else if (sim.info != 'pause') {
-            sim.info = 'ok'
           }
         }
         
@@ -239,6 +258,8 @@ function updateInfoField() {
     document.getElementById('sim_status').innerHTML = sim.info
     if (sim.info == 'broken') {
       document.getElementById('sim_status').style.color = 'red'
+    } else if (sim.info == 'loop') {
+      document.getElementById('sim_status').style.color = 'blue'
     }
   }
   
@@ -261,7 +282,7 @@ function updateInfoField() {
         html += ')&#062;</span>'
       }
       html += ' <span class="conf">'
-      if (t.head_pos > 0) html += t.content.slice(0, t.head_pos)
+      if (t.head_pos > 0) html += t.content.slice(0, t.head_pos).join(machine.multi_character_symbols? ' ' : '')
       html += '<span class="conf_head"><span class="conf_state">'+val.state+'</span>'+t.content[t.head_pos]+'</span>'
       if (t.head_pos != t.content.length-1) html += t.content.slice(t.head_pos+2).join(machine.multi_character_symbols? ' ' : '')+'</span>'
       html += '\n'
@@ -312,6 +333,37 @@ function generateConfiguration(lastTrans) {
   
   copy.max_storage_occupancy = max_occupancy
   return copy
+}
+
+/* Compare the current configuration with all previous configurations and
+ * find first equal configuration.
+ * Returns the index of the fist configuration that is equal to
+ * this one returns or -1.
+ */
+function checkForLoop() {
+  if (sim.configurations.length < 2) return -1
+  
+  var curr = sim.configurations[sim.configurations.length-1]
+  for (var i = 0; i < sim.configurations.length-1; i++) {
+    if (confEqual(curr, sim.configurations[i])) return i
+  }
+  
+  return -1
+}
+/* Checks if two configurations are equal.
+ */
+function confEqual(conf1, conf2) {
+  if (conf1.state != conf2.state
+   || conf1.tapes.length != conf2.tapes.length) return false
+ 
+ for (var i = 0; i < conf1.tapes.length; i++) {
+   var t1 = conf1.tapes[i]
+     , t2 = conf2.tapes[i]
+   if (t1.head_pos != t2.head_pos
+    || !arrayEqu(t1.content, t2.content)) return false
+ }
+ 
+ return true
 }
 
 /* ================================= graphics */
