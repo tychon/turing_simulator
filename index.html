@@ -87,9 +87,9 @@ function showHide(button_id, field_id, display_mode) {
   <body>
     <!-- Buttons for tab pane -->
     <div>
-      <a id="description_button" href="javascript:if(guiEnabled) openDescription()" class="button tabButton" style="margin-left:0px; border-top-left-radius:5px">Description</a>
-      <a id="simulation_button" href="javascript:if(guiEnabled) openSimulation()" class="button tabButton">Simulation</a>
-      <a id="test_button" href="javascript:if(guiEnabled) openTest()" class="button tabButton" style="border-top-right-radius:5px">Test</a>
+      <a id="description_button" href="#" onclick="if(guiEnabled) openDescription(); return false" class="button tabButton" style="margin-left:0px; border-top-left-radius:5px">Description</a>
+      <a id="simulation_button" href="#" onclick="if(guiEnabled) openSimulation(); return false" class="button tabButton">Simulation</a>
+      <a id="test_button" href="#" onclick="if(guiEnabled) openTest(); return false" class="button tabButton" style="border-top-right-radius:5px">Test</a>
       <a class="github_link" href="http://github.com/tychon/turing_simulator" style="float: right; text-align: right">This project on GitHub</a>
       <span class="tip" style="float:right; text-align:right; margin-right:5px">The page layout is most beautiful with Chromium / Google Chrome</span>
     </div>
@@ -97,7 +97,7 @@ function showHide(button_id, field_id, display_mode) {
     <table class="layout"><tbody><tr><td class="layout_tabs">
       <div id="description" class="tab" style="display: block">
         <!-- compile -->
-        <a href="javascript: compile()" class="button">compile</a>
+        <a href="#" onclick="compile(); return false" class="button">compile</a>
         <input id="componthefly" type="checkbox" checked style="margin-left:10px"/> Compile on the fly
         <span class="tip" style="margin-left:10px">(Result shown in the box on the right.)</span><br>
         <!-- type -->
@@ -161,17 +161,16 @@ The input is an binary number and the output this number increased by one.
       <div id="simulation" class="tab" style="display: none">
         <span class="tip">(Every input resets the simulation!)</span><br>
         Input: <input id="sim_input" type="text" value="1001101" onkeyup="if(guiEnabled) resetSimulation()" />
-        <!--<a href="javascript:startSimulation()" class="simButton">Start</a>-->
-        <a href="javascript:if(guiEnabled) resetSimulation()" class="button">Reset</a><br>
+        <a href="#" onclick="if(guiEnabled) resetSimulation(); return false" class="button">Reset</a><br>
         <div class="tip">(Characters not in the alphabet are filtered out.)<span id="multi_char_symbols_tip"><br>(The Symbols have to be separated by spaces!)</span></div>
         <div id="canvas_container" style="margin:5px; padding:5px">
           <canvas id="tape_canvas" width="500" height="100">Der Browser unterstuetzt kein HTML5 !</canvas>
         </div>
         <div>
           <span class="sim_infobox" style="float: right">Status: <span id="sim_status" style="font-size:large"></span><br><span id="sim_info_text"></span><br><span id="sim_info"></span></span>
-          <a href="javascript:if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }" class="button">STEP</a>
-          <a id="runpause" href="javascript:if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run();" class="button">RUN</a>
-          <a href="javascript:if(guiEnabled) sim_revert()" class="button" style="display: none">Revert last step</a><br>
+          <a href="#" onclick="if(guiEnabled) { disableGui('all'); sim_step(function(){enableGui()}) }; return false" class="button">STEP</a>
+          <a id="runpause" href="#" onclick="if (document.getElementById('runpause').innerHTML == 'PAUSE') sim.info = 'pause' ; else sim_run(); return false" class="button">RUN</a>
+          <a href="#" onclick="if(guiEnabled) sim_revert(); return false" class="button" style="display: none">Revert last step</a><br>
           Geschwindigkeit: <span class="tip">(fast)</span><input id="speed_slider" type="range" min="50" max="5000" value="1000" step="100" style="margin-top:10px"/><span class="tip">(slowly)</span><br>
           <span style="display:none">Band Anzeigegröße: <input id="tape_size_slider" type="range" min="10" max="50" value="30" step="2" /></span><br>
           <span style="display:none"><input id="parallel_tape_processing" type="checkbox" checked> Parallel tape processing<br></span>
@@ -190,7 +189,7 @@ The input is an binary number and the output this number increased by one.
         </div>
         Word length: <span class="tip" style="margin-left: 0px">0 &lt;</span> <input id="test_word_length" type="text" onkeyup="if(guiEnabled) resetTest()" size="3" value="3" /> <span class="tip" style="margin-left: 0px">&lt; 31</span> symbols.<br>
         <input id="test_break_checkbox" type="checkbox" onclick="if(guiEnabled) resetTest()" checked style="display:none"/>Break simulation after <input id="test_break_num" type="text" size="4" onkeyup="if(guiEnabled) resetTest()" value="500"> steps and assume that the word is rejected.<br>
-        <a href="javascript:if(guiEnabled) { resetTest(); startTest() }" class="button" >START</a> <span class="tip">(BE CAREFUL: You can't stop a running test.)</span>
+        <a href="#" onclick="if(guiEnabled) { resetTest(); startTest() }; return false" class="button" >START</a> <span class="tip">(BE CAREFUL: You can't stop a running test.)</span>
         <div style="clear: both"><!-- block floating --></div>
         <div id="test_result"></div>
       </div>
